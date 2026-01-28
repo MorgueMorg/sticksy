@@ -152,7 +152,7 @@ class StickerEditorController extends StateNotifier<StickerEditorState> {
       packId: packId,
       stickerId: sticker?.id,
       stickerName: sticker?.name ?? 'Untitled Sticker',
-      canvasSize: const Size(320, 320),
+      canvasSize: const Size(512, 512),
       background: const StickerBackground(type: BackgroundType.transparent),
       filter: const StickerFilter(),
       layers: layers,
@@ -180,8 +180,8 @@ class StickerEditorController extends StateNotifier<StickerEditorState> {
         stickerId: sticker.id,
         stickerName: decoded['stickerName'] as String? ?? sticker.name,
         canvasSize: Size(
-          (canvas['width'] as num?)?.toDouble() ?? 320,
-          (canvas['height'] as num?)?.toDouble() ?? 320,
+          (canvas['width'] as num?)?.toDouble() ?? 512,
+          (canvas['height'] as num?)?.toDouble() ?? 512,
         ),
         background: StickerBackground.fromJson(
           Map<String, dynamic>.from(decoded['background'] as Map? ?? {}),

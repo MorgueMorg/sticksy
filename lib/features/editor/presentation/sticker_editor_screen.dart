@@ -58,12 +58,12 @@ class StickerEditorInit {
 
 final stickerEditorProvider = StateNotifierProvider.autoDispose
     .family<StickerEditorController, StickerEditorState, StickerEditorInit>(
-  (ref, init) => StickerEditorController(
-    packId: init.packId,
-    initialSticker: init.sticker,
-    initialImagePath: init.initialImagePath,
-  ),
-);
+      (ref, init) => StickerEditorController(
+        packId: init.packId,
+        initialSticker: init.sticker,
+        initialImagePath: init.initialImagePath,
+      ),
+    );
 
 class StickerEditorScreen extends ConsumerStatefulWidget {
   const StickerEditorScreen({super.key, this.args});
@@ -88,10 +88,7 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final args = widget.args ??
-        StickerEditorArgs(
-          packId: '',
-        );
+    final args = widget.args ?? StickerEditorArgs(packId: '');
     if (args.packId.isEmpty) {
       return const GradientScaffold(
         body: Center(child: Text('Missing pack context')),
@@ -106,9 +103,7 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
           body: Center(child: CircularProgressIndicator()),
         ),
         error: (error, _) => GradientScaffold(
-          body: Center(
-            child: Text('Failed to load sticker: $error'),
-          ),
+          body: Center(child: Text('Failed to load sticker: $error')),
         ),
       );
     }
@@ -166,9 +161,7 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
           Column(
             children: [
               Expanded(
-                child: Center(
-                  child: _buildCanvas(context, state, controller),
-                ),
+                child: Center(child: _buildCanvas(context, state, controller)),
               ),
               const SizedBox(height: 12),
               _EditorToolbar(
@@ -206,29 +199,43 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final size = state.canvasSize;
-        return FittedBox(
-          fit: BoxFit.contain,
-          child: RepaintBoundary(
-            key: _canvasKey,
-            child: SizedBox(
-              width: size.width,
-              height: size.height,
-              child: GestureDetector(
-                onTap: state.isDrawing ? null : () => controller.selectLayer(null),
-                onPanStart: state.isDrawing
-                    ? (details) => controller.startStroke(details.localPosition)
-                    : null,
-                onPanUpdate: state.isDrawing
-                    ? (details) =>
-                        controller.updateStroke(details.localPosition)
-                    : null,
-                onPanEnd: state.isDrawing ? (_) => controller.endStroke() : null,
-                child: _StickerCanvas(
-                  state: state,
-                  onLayerTap: controller.selectLayer,
-                  onLayerTransform: controller.updateLayerTransform,
-                  onLayerOpacity: controller.updateLayerOpacity,
-                  onDeleteLayer: controller.removeLayer,
+        // Вычисляем максимальный размер, который может занять холст (80% от доступного пространства)
+        final maxWidth = constraints.maxWidth * 0.9;
+        final maxHeight = constraints.maxHeight * 0.9;
+        final scale = math
+            .min(maxWidth / size.width, maxHeight / size.height)
+            .clamp(0.5, 4.0); // Ограничиваем масштаб от 0.5x до 1.5x
+
+        return Center(
+          child: Transform.scale(
+            scale: scale,
+            child: RepaintBoundary(
+              key: _canvasKey,
+              child: SizedBox(
+                width: size.width,
+                height: size.height,
+                child: GestureDetector(
+                  onTap: state.isDrawing
+                      ? null
+                      : () => controller.selectLayer(null),
+                  onPanStart: state.isDrawing
+                      ? (details) =>
+                            controller.startStroke(details.localPosition)
+                      : null,
+                  onPanUpdate: state.isDrawing
+                      ? (details) =>
+                            controller.updateStroke(details.localPosition)
+                      : null,
+                  onPanEnd: state.isDrawing
+                      ? (_) => controller.endStroke()
+                      : null,
+                  child: _StickerCanvas(
+                    state: state,
+                    onLayerTap: controller.selectLayer,
+                    onLayerTransform: controller.updateLayerTransform,
+                    onLayerOpacity: controller.updateLayerOpacity,
+                    onDeleteLayer: controller.removeLayer,
+                  ),
                 ),
               ),
             ),
@@ -292,14 +299,14 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
         );
       }
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sticker saved locally')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Sticker saved locally')));
     } catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Save failed: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Save failed: $error')));
     } finally {
       controller.setSaving(false);
     }
@@ -322,14 +329,14 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
       await file.writeAsBytes(bytes, flush: true);
       await Share.shareXFiles([XFile(file.path)], text: 'Sticker export');
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Exported to ${file.path}')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Exported to ${file.path}')));
     } catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Export failed: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Export failed: $error')));
     } finally {
       controller.setSaving(false);
     }
@@ -339,21 +346,17 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
     final boundary =
         _canvasKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
     if (boundary == null) return null;
-    final pixelRatio = math.min(
-      MediaQuery.of(context).devicePixelRatio,
-      3.0,
-    );
+    final pixelRatio = math.min(MediaQuery.of(context).devicePixelRatio, 3.0);
     return boundary.toImage(pixelRatio: pixelRatio);
   }
 
-  Future<Uint8List> _encodeImage(
-    ui.Image image,
-    StickerFormat format,
-  ) async {
+  Future<Uint8List> _encodeImage(ui.Image image, StickerFormat format) async {
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     final pngBytes = byteData!.buffer.asUint8List();
     if (format == StickerFormat.png) return pngBytes;
-    return ref.read(imageExportServiceProvider).encodeWebp(pngBytes, quality: 85);
+    return ref
+        .read(imageExportServiceProvider)
+        .encodeWebp(pngBytes, quality: 85);
   }
 
   Future<Size> _decodeImageSize(Uint8List bytes) async {
@@ -490,36 +493,34 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
-                children: [
-                  Colors.white,
-                  Colors.black,
-                  const Color(0xFFFF6B6B),
-                  const Color(0xFF7C5CFF),
-                  const Color(0xFF00C2FF),
-                  const Color(0xFF2ED47A),
-                ]
-                    .map(
-                      (color) => GestureDetector(
-                        onTap: () => setState(() => selected = color),
-                        child: CircleAvatar(
-                          radius: 16,
-                          backgroundColor: color,
-                          child: selected == color
-                              ? const Icon(Icons.check, size: 16)
-                              : null,
-                        ),
-                      ),
-                    )
-                    .toList(),
+                children:
+                    [
+                          Colors.white,
+                          Colors.black,
+                          const Color(0xFFFF6B6B),
+                          const Color(0xFF7C5CFF),
+                          const Color(0xFF00C2FF),
+                          const Color(0xFF2ED47A),
+                        ]
+                        .map(
+                          (color) => GestureDetector(
+                            onTap: () => setState(() => selected = color),
+                            child: CircleAvatar(
+                              radius: 16,
+                              backgroundColor: color,
+                              child: selected == color
+                                  ? const Icon(Icons.check, size: 16)
+                                  : null,
+                            ),
+                          ),
+                        )
+                        .toList(),
               ),
               const SizedBox(height: 12),
               FilledButton(
                 onPressed: () {
                   if (textController.text.trim().isEmpty) return;
-                  controller.addTextLayer(
-                    textController.text.trim(),
-                    selected,
-                  );
+                  controller.addTextLayer(textController.text.trim(), selected);
                   Navigator.of(context).pop();
                 },
                 child: const Text('Add Text'),
@@ -574,7 +575,7 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
     const shapes = [
       ShapeType.circle,
       ShapeType.roundedSquare,
-      ShapeType.square
+      ShapeType.square,
     ];
     await showModalBottomSheet(
       context: context,
@@ -676,10 +677,10 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
     StickerEditorController controller,
   ) async {
     final presets = [
-      const StickerSizePreset(label: 'Square 1:1', width: 320, height: 320),
-      const StickerSizePreset(label: 'Portrait 3:4', width: 240, height: 320),
-      const StickerSizePreset(label: 'Landscape 4:3', width: 320, height: 240),
-      const StickerSizePreset(label: 'Tall 9:16', width: 270, height: 480),
+      const StickerSizePreset(label: 'Square 1:1', width: 512, height: 512),
+      const StickerSizePreset(label: 'Portrait 3:4', width: 384, height: 512),
+      const StickerSizePreset(label: 'Landscape 4:3', width: 512, height: 384),
+      const StickerSizePreset(label: 'Tall 9:16', width: 432, height: 768),
     ];
     await showModalBottomSheet(
       context: context,
@@ -698,7 +699,8 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
                   .map(
                     (preset) => ChoiceChip(
                       label: Text(preset.label),
-                      selected: state.canvasSize.width == preset.width &&
+                      selected:
+                          state.canvasSize.width == preset.width &&
                           state.canvasSize.height == preset.height,
                       onSelected: (_) {
                         controller.setCanvasSize(
@@ -716,10 +718,7 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
                 const Spacer(),
                 SegmentedButton<StickerFormat>(
                   segments: const [
-                    ButtonSegment(
-                      value: StickerFormat.png,
-                      label: Text('PNG'),
-                    ),
+                    ButtonSegment(value: StickerFormat.png, label: Text('PNG')),
                     ButtonSegment(
                       value: StickerFormat.webp,
                       label: Text('WebP'),
@@ -768,9 +767,9 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
       controller.replaceImageLayer(selected.id, file.path, size);
     } catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Crop failed: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Crop failed: $error')));
     }
   }
 
@@ -967,10 +966,7 @@ class _LayerWidgetState extends State<_LayerWidget> {
       padding: widget.selected ? const EdgeInsets.all(6) : EdgeInsets.zero,
       decoration: BoxDecoration(
         border: widget.selected
-            ? Border.all(
-                color: Colors.white.withValues(alpha: 0.6),
-                width: 1.2,
-              )
+            ? Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.2)
             : null,
         borderRadius: BorderRadius.circular(16),
       ),
@@ -980,14 +976,14 @@ class _LayerWidgetState extends State<_LayerWidget> {
     return Positioned.fill(
       child: Transform(
         transform: Matrix4.identity()
-          ..translateByDouble(transform.position.dx, transform.position.dy, 0, 1)
-          ..rotateZ(transform.rotation)
-          ..scaleByDouble(
-            transform.scale,
-            transform.scale,
-            transform.scale,
+          ..translateByDouble(
+            transform.position.dx,
+            transform.position.dy,
+            0,
             1,
-          ),
+          )
+          ..rotateZ(transform.rotation)
+          ..scaleByDouble(transform.scale, transform.scale, transform.scale, 1),
         alignment: Alignment.center,
         child: GestureDetector(
           onTap: widget.enabled ? widget.onTap : null,
@@ -1003,17 +999,16 @@ class _LayerWidgetState extends State<_LayerWidget> {
                   widget.onTransform(
                     _startTransform.copyWith(
                       position: _startTransform.position + delta,
-                      scale: (_startTransform.scale * details.scale)
-                          .clamp(0.2, 5),
-                      rotation:
-                          _startTransform.rotation + details.rotation,
+                      scale: (_startTransform.scale * details.scale).clamp(
+                        0.2,
+                        5,
+                      ),
+                      rotation: _startTransform.rotation + details.rotation,
                     ),
                   );
                 }
               : null,
-          onLongPress: widget.enabled
-              ? () => _showLayerMenu(context)
-              : null,
+          onLongPress: widget.enabled ? () => _showLayerMenu(context) : null,
           child: decoratedChild,
         ),
       ),
@@ -1054,7 +1049,7 @@ class _LayerWidgetState extends State<_LayerWidget> {
                         blurRadius: layer.shadow,
                         color: Colors.black54,
                         offset: const Offset(2, 2),
-                      )
+                      ),
                     ]
                   : null,
             ),
@@ -1078,10 +1073,7 @@ class _LayerWidgetState extends State<_LayerWidget> {
               ? BorderRadius.circular(24)
               : null,
           border: layer.strokeWidth > 0
-              ? Border.all(
-                  color: layer.strokeColor,
-                  width: layer.strokeWidth,
-                )
+              ? Border.all(color: layer.strokeColor, width: layer.strokeWidth)
               : null,
         ),
       );
@@ -1224,7 +1216,11 @@ class _EditorToolbar extends StatelessWidget {
           children: [
             _ToolIcon(icon: Icons.layers, label: 'BG', onTap: onBackground),
             _ToolIcon(icon: Icons.text_fields, label: 'Text', onTap: onText),
-            _ToolIcon(icon: Icons.emoji_emotions, label: 'Emoji', onTap: onEmoji),
+            _ToolIcon(
+              icon: Icons.emoji_emotions,
+              label: 'Emoji',
+              onTap: onEmoji,
+            ),
             _ToolIcon(icon: Icons.category, label: 'Shape', onTap: onShape),
             _ToolIcon(icon: Icons.crop, label: 'Crop', onTap: onCrop),
             _ToolIcon(
@@ -1234,7 +1230,11 @@ class _EditorToolbar extends StatelessWidget {
               active: state.isDrawing,
             ),
             _ToolIcon(icon: Icons.tune, label: 'Filter', onTap: onFilter),
-            _ToolIcon(icon: Icons.add_photo_alternate, label: 'Add', onTap: onImport),
+            _ToolIcon(
+              icon: Icons.add_photo_alternate,
+              label: 'Add',
+              onTap: onImport,
+            ),
             _ToolIcon(icon: Icons.auto_fix_high, label: 'AI', onTap: onAI),
           ],
         ),
