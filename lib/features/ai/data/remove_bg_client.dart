@@ -26,18 +26,40 @@ class RemoveBgClient {
         ),
       );
 
-    final streamed = await _client.send(request).timeout(
-          const Duration(seconds: 60),
-          onTimeout: () => throw StateError('remove.bg request timed out'),
-        );
-    final response = await http.Response.fromStream(streamed);
+    try {
+      final streamed = await _client.send(request).timeout(
+            const Duration(seconds: 60),
+            onTimeout: () => throw StateError('Превышено время ожидания ответа от remove.bg'),
+          );
+      final response = await http.Response.fromStream(streamed);
 
-    if (response.statusCode != 200) {
-      throw StateError(
-        'remove.bg error ${response.statusCode}: ${response.body}',
-      );
+      if (response.statusCode != 200) {
+        String errorMsg = 'Ошибка remove.bg ${response.statusCode}';
+        try {
+          final errorBody = response.body;
+          if (errorBody.isNotEmpty) {
+            errorMsg = errorBody.length > 200 
+                ? '${errorBody.substring(0, 200)}...' 
+                : errorBody;
+          }
+        } catch (_) {
+          // Ignore parsing errors
+        }
+        throw StateError(errorMsg);
+      }
+
+      if (response.bodyBytes.isEmpty) {
+        throw StateError('remove.bg вернул пустой ответ');
+      }
+
+      return response.bodyBytes;
+    } on StateError {
+      rethrow;
+    } catch (e) {
+      if (e.toString().contains('timeout') || e.toString().contains('TimeoutException')) {
+        throw StateError('Превышено время ожидания ответа от remove.bg. Попробуйте позже.');
+      }
+      throw StateError('Ошибка подключения к remove.bg: ${e.toString()}');
     }
-
-    return response.bodyBytes;
   }
 }

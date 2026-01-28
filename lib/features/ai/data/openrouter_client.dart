@@ -35,27 +35,46 @@ class OpenRouterClient {
       'temperature': 0.4,
     };
 
-    final response = await _client.post(
-      Uri.parse('$baseUrl/chat/completions'),
-      headers: _headers(),
-      body: jsonEncode(body),
-    ).timeout(const Duration(seconds: 45));
+    try {
+      final response = await _client.post(
+        Uri.parse('$baseUrl/chat/completions'),
+        headers: _headers(),
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 45));
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw StateError('OpenRouter error ${response.statusCode}: ${response.body}');
-    }
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        String errorMsg = 'Ошибка API ${response.statusCode}';
+        try {
+          final errorBody = jsonDecode(response.body) as Map<String, dynamic>?;
+          final error = errorBody?['error'] as Map<String, dynamic>?;
+          errorMsg = error?['message'] as String? ?? 
+                    errorBody?['message'] as String? ?? 
+                    response.body;
+        } catch (_) {
+          errorMsg = response.body.isNotEmpty ? response.body : errorMsg;
+        }
+        throw StateError(errorMsg);
+      }
 
-    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-    final choices = decoded['choices'] as List<dynamic>?;
-    if (choices == null || choices.isEmpty) {
-      throw StateError('OpenRouter returned no choices.');
+      final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+      final choices = decoded['choices'] as List<dynamic>?;
+      if (choices == null || choices.isEmpty) {
+        throw StateError('API не вернул варианты ответа.');
+      }
+      final message = choices.first['message'] as Map<String, dynamic>?;
+      final content = message?['content'] as String?;
+      if (content == null || content.isEmpty) {
+        throw StateError('API вернул пустой ответ.');
+      }
+      return content;
+    } on StateError {
+      rethrow;
+    } catch (e) {
+      if (e.toString().contains('timeout') || e.toString().contains('TimeoutException')) {
+        throw StateError('Превышено время ожидания ответа от API. Попробуйте позже.');
+      }
+      throw StateError('Ошибка подключения к API: ${e.toString()}');
     }
-    final message = choices.first['message'] as Map<String, dynamic>?;
-    final content = message?['content'] as String?;
-    if (content == null || content.isEmpty) {
-      throw StateError('OpenRouter returned empty content.');
-    }
-    return content;
   }
 
   Map<String, String> _headers() {
