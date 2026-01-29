@@ -125,7 +125,6 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
     );
     final state = ref.watch(stickerEditorProvider(init));
     final controller = ref.read(stickerEditorProvider(init).notifier);
-    _nameController.text = state.stickerName;
 
     return GradientScaffold(
       appBar: AppBar(
@@ -144,7 +143,7 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
           IconButton(
             tooltip: 'Rename',
             icon: const Icon(CupertinoIcons.pencil),
-            onPressed: () => _showRenameDialog(context, controller),
+            onPressed: () => _showRenameDialog(context, controller, state.stickerName),
           ),
           IconButton(
             tooltip: 'Export',
@@ -376,7 +375,9 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
   Future<void> _showRenameDialog(
     BuildContext context,
     StickerEditorController controller,
+    String currentName,
   ) async {
+    _nameController.text = currentName;
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(

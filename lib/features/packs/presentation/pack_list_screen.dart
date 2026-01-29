@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sticksy/features/settings/presentation/settings.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../core/widgets/glass_card.dart';
@@ -23,8 +24,15 @@ class PackListScreen extends ConsumerWidget {
         actions: [
           CupertinoButton(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            onPressed: () => _showSettings(context, ref),
-            child: const Icon(CupertinoIcons.settings, color: CupertinoColors.white),
+            onPressed: () {
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (context) => SettingsScreen()));
+            },
+            child: const Icon(
+              CupertinoIcons.settings,
+              color: CupertinoColors.white,
+            ),
           ),
         ],
       ),
@@ -112,14 +120,6 @@ class PackListScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-
-  void _showSettings(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const _SettingsSheet(),
     );
   }
 }
@@ -233,11 +233,7 @@ class _PackCard extends ConsumerWidget {
     );
   }
 
-  void _showPackActions(
-    BuildContext context,
-    WidgetRef ref,
-    PackSummary pack,
-  ) {
+  void _showPackActions(BuildContext context, WidgetRef ref, PackSummary pack) {
     final controller = TextEditingController(text: pack.name);
     showModalBottomSheet(
       context: context,
@@ -275,7 +271,9 @@ class _PackCard extends ConsumerWidget {
               onPressed: () async {
                 final name = controller.text.trim();
                 if (name.isEmpty) return;
-                await ref.read(packRepositoryProvider).renamePack(pack.id, name);
+                await ref
+                    .read(packRepositoryProvider)
+                    .renamePack(pack.id, name);
                 if (context.mounted) Navigator.of(context).pop();
               },
               child: const Text('Save Name'),
@@ -400,7 +398,10 @@ class _EmptyState extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               CupertinoButton(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 14,
+                ),
                 borderRadius: BorderRadius.circular(14),
                 color: const Color(0xFF2C2C2E),
                 onPressed: onCreate,
@@ -411,67 +412,5 @@ class _EmptyState extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _SettingsSheet extends ConsumerWidget {
-  const _SettingsSheet();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return GlassCard(
-      padding: const EdgeInsets.all(24),
-      child: FutureBuilder<int>(
-        future: ref.read(cacheServiceProvider).getCacheSize(),
-        builder: (context, snapshot) {
-          final size = snapshot.data ?? 0;
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Storage & Cache',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: CupertinoColors.white,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Cache size: ${_formatBytes(size)}',
-                style: const TextStyle(color: Color(0xFF8E8E93)),
-              ),
-              const SizedBox(height: 16),
-              CupertinoButton(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                borderRadius: BorderRadius.circular(14),
-                color: const Color(0xFF2C2C2E),
-                onPressed: () async {
-                  await ref.read(cacheServiceProvider).clearCache();
-                  if (context.mounted) Navigator.of(context).pop();
-                },
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(CupertinoIcons.trash),
-                    SizedBox(width: 8),
-                    Text('Clear Cache'),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  String _formatBytes(int bytes) {
-    if (bytes <= 0) return '0 B';
-    const suffixes = ['B', 'KB', 'MB', 'GB'];
-    final i = (bytes == 0) ? 0 : (math.log(bytes) / math.log(1024)).floor();
-    final size = (bytes / math.pow(1024, i)).toStringAsFixed(1);
-    return '$size ${suffixes[i]}';
   }
 }
