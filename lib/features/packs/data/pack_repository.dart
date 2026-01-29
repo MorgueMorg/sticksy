@@ -9,7 +9,7 @@ import '../domain/models.dart';
 abstract class PackRepository {
   Stream<List<PackSummary>> watchPackSummaries();
   Future<PackSummary?> getPackSummary(String id);
-  Future<void> createPack(String name);
+  Future<String> createPack(String name);
   Future<void> renamePack(String id, String name);
   Future<void> deletePack(String id);
   Future<void> duplicatePack(String id);
@@ -115,21 +115,22 @@ class PackRepositoryImpl implements PackRepository {
   }
 
   @override
-  Future<void> createPack(String name) async {
+  Future<String> createPack(String name) async {
     final lastPack = await (database.select(database.packs)
           ..orderBy([(t) => OrderingTerm.desc(t.sortOrder)])
           ..limit(1))
         .getSingleOrNull();
     final sortOrder = (lastPack?.sortOrder ?? -1) + 1;
-
+    final packId = _uuid.v4();
     await database.into(database.packs).insert(
           PacksCompanion.insert(
-            id: _uuid.v4(),
+            id: packId,
             name: name,
             coverStickerId: const Value(null),
             sortOrder: sortOrder,
           ),
         );
+    return packId;
   }
 
   @override
