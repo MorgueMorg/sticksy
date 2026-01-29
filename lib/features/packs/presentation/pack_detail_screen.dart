@@ -287,15 +287,34 @@ class _StickerTile extends ConsumerWidget {
         ),
       ),
       onLongPress: () => _showStickerActions(context, ref),
-      child: GlassCard(
-        padding: EdgeInsets.zero,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Image.file(
-            File(sticker.filePath),
-            fit: BoxFit.cover,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Expanded(
+            child: GlassCard(
+              padding: EdgeInsets.zero,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.file(
+                  File(sticker.filePath),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
           ),
-        ),
+          const SizedBox(height: 6),
+          Text(
+            sticker.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF8E8E93),
+              fontSize: 12,
+            ),
+          ),
+        ],
       ),
     );
   }

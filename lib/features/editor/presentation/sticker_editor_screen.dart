@@ -143,7 +143,7 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
           IconButton(
             tooltip: 'Rename',
             icon: const Icon(CupertinoIcons.pencil),
-            onPressed: () => _showRenameDialog(context, controller, state.stickerName),
+            onPressed: () => _showRenameDialog(context, controller, state.stickerName, state.stickerId),
           ),
           IconButton(
             tooltip: 'Export',
@@ -306,9 +306,9 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
         );
       }
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Sticker saved locally')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sticker "${state.stickerName}" saved')),
+      );
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
@@ -376,6 +376,7 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
     BuildContext context,
     StickerEditorController controller,
     String currentName,
+    String? stickerId,
   ) async {
     _nameController.text = currentName;
     final result = await showDialog<String>(
@@ -399,7 +400,16 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
       ),
     );
     if (result == null || result.trim().isEmpty) return;
-    controller.setStickerName(result.trim());
+    final name = result.trim();
+    controller.setStickerName(name);
+    if (stickerId != null) {
+      await ref.read(stickerRepositoryProvider).renameSticker(stickerId, name);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sticker renamed to "$name"')),
+        );
+      }
+    }
   }
 
   Future<void> _showBackgroundSheet(
