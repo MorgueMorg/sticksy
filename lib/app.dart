@@ -1,11 +1,14 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/config/app_router.dart';
 import 'core/config/app_theme.dart';
 import 'core/config/env.dart';
+import 'core/config/onboarding_storage.dart' as onboarding_storage;
 import 'core/widgets/glass_card.dart';
 import 'core/widgets/gradient_scaffold.dart';
+import 'features/onboarding/presentation/onboarding_screen.dart';
 
 class StickerForgeApp extends ConsumerStatefulWidget {
   const StickerForgeApp({super.key, required this.envResult});
@@ -18,6 +21,28 @@ class StickerForgeApp extends ConsumerStatefulWidget {
 
 class _StickerForgeAppState extends ConsumerState<StickerForgeApp> {
   bool _allowWithoutAi = false;
+  bool? _onboardingCompleted;
+  bool _loadingOnboarding = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOnboarding();
+  }
+
+  Future<void> _loadOnboarding() async {
+    final completed = await onboarding_storage.getOnboardingCompleted();
+    if (mounted) {
+      setState(() {
+        _onboardingCompleted = completed;
+        _loadingOnboarding = false;
+      });
+    }
+  }
+
+  void _onOnboardingComplete() {
+    setState(() => _onboardingCompleted = true);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,10 +58,28 @@ class _StickerForgeAppState extends ConsumerState<StickerForgeApp> {
       );
     }
 
+    if (_loadingOnboarding) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.darkTheme,
+        home: const GradientScaffold(
+          body: Center(child: CupertinoActivityIndicator()),
+        ),
+      );
+    }
+
+    if (_onboardingCompleted != true) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.darkTheme,
+        home: OnboardingScreen(onComplete: _onOnboardingComplete),
+      );
+    }
+
     final router = AppRouter.buildRouter();
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'Sticker Forge',
+      title: 'Sticksy',
       theme: AppTheme.darkTheme,
       routerConfig: router,
     );
@@ -58,7 +101,7 @@ class EnvErrorScreen extends StatelessWidget {
     final missing = envResult.missingKeys;
     return GradientScaffold(
       appBar: AppBar(
-        title: const Text('Sticker Forge'),
+        title: const Text('Sticksy'),
         centerTitle: true,
       ),
       body: Center(
@@ -97,10 +140,19 @@ class EnvErrorScreen extends StatelessWidget {
                         .toList(),
                   ),
                 const SizedBox(height: 20),
-                FilledButton.icon(
+                CupertinoButton(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  borderRadius: BorderRadius.circular(14),
+                  color: const Color(0xFF2C2C2E),
                   onPressed: onContinue,
-                  icon: const Icon(Icons.offline_bolt),
-                  label: const Text('Continue without AI'),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(CupertinoIcons.bolt_slash, size: 20),
+                      SizedBox(width: 8),
+                      Text('Continue without AI'),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 8),
                 const Text(

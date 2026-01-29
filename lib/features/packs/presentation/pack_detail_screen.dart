@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,35 +26,43 @@ class PackDetailScreen extends ConsumerWidget {
     final stickersAsync = ref.watch(stickersForPackProvider(packId));
     return GradientScaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(CupertinoIcons.back),
+          onPressed: () => context.pop(),
+        ),
         title: const Text('Sticker Pack'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.ios_share_outlined),
+          CupertinoButton(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             onPressed: () => _showExportSheet(context, ref),
+            child: const Icon(CupertinoIcons.share, color: CupertinoColors.white),
           ),
-          IconButton(
-            icon: const Icon(Icons.add),
+          CupertinoButton(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             onPressed: () => _showAddStickerSheet(context, ref),
+            child: const Icon(CupertinoIcons.add, color: CupertinoColors.white),
           ),
         ],
       ),
       body: packAsync.when(
         data: (pack) {
           if (pack == null) {
-            return const Center(child: Text('Pack not found'));
+            return const Center(
+              child: Text('Pack not found', style: TextStyle(color: Color(0xFF8E8E93))),
+            );
           }
           return stickersAsync.when(
             data: (stickers) => _PackDetailBody(
               pack: pack,
               stickers: stickers,
             ),
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: CupertinoActivityIndicator(color: CupertinoColors.white)),
             error: (error, _) =>
-                Center(child: Text('Failed to load stickers: $error')),
+                Center(child: Text('Failed to load stickers: $error', style: const TextStyle(color: Color(0xFF8E8E93)))),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Pack error: $error')),
+        loading: () => const Center(child: CupertinoActivityIndicator(color: CupertinoColors.white)),
+        error: (error, _) => Center(child: Text('Pack error: $error', style: const TextStyle(color: Color(0xFF8E8E93)))),
       ),
     );
   }
@@ -64,41 +73,70 @@ class PackDetailScreen extends ConsumerWidget {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => GlassCard(
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Add Sticker'),
-            const SizedBox(height: 12),
-            FilledButton.icon(
+            const Text(
+              'Add Sticker',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: CupertinoColors.white),
+            ),
+            const SizedBox(height: 16),
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              borderRadius: BorderRadius.circular(14),
+              color: const Color(0xFF2C2C2E),
               onPressed: () async {
-                final file =
-                    await picker.pickImage(source: ImageSource.camera);
+                final file = await picker.pickImage(source: ImageSource.camera);
                 if (file == null) return;
                 if (context.mounted) Navigator.of(context).pop();
                 _openEditor(context, initialImagePath: file.path);
               },
-              icon: const Icon(Icons.camera_alt),
-              label: const Text('Camera'),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(CupertinoIcons.camera),
+                  SizedBox(width: 8),
+                  Text('Camera'),
+                ],
+              ),
             ),
-            FilledButton.icon(
+            const SizedBox(height: 8),
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              borderRadius: BorderRadius.circular(14),
+              color: const Color(0xFF2C2C2E),
               onPressed: () async {
-                final file =
-                    await picker.pickImage(source: ImageSource.gallery);
+                final file = await picker.pickImage(source: ImageSource.gallery);
                 if (file == null) return;
                 if (context.mounted) Navigator.of(context).pop();
                 _openEditor(context, initialImagePath: file.path);
               },
-              icon: const Icon(Icons.photo_library),
-              label: const Text('Gallery'),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(CupertinoIcons.photo),
+                  SizedBox(width: 8),
+                  Text('Gallery'),
+                ],
+              ),
             ),
-            OutlinedButton.icon(
+            const SizedBox(height: 8),
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 14),
               onPressed: () {
                 Navigator.of(context).pop();
                 _openEditor(context);
               },
-              icon: const Icon(Icons.draw),
-              label: const Text('Blank Canvas'),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(CupertinoIcons.pencil),
+                  SizedBox(width: 8),
+                  Text('Blank Canvas'),
+                ],
+              ),
             ),
           ],
         ),
@@ -140,39 +178,55 @@ class _PackDetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       children: [
         GlassCard(
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(pack.name, style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                pack.name,
+                style: const TextStyle(
+                  color: CupertinoColors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const SizedBox(height: 8),
               Text(
-                '${pack.stickerCount} stickers • '
-                '${_formatBytes(pack.totalSize)}',
+                '${pack.stickerCount} stickers • ${_formatBytes(pack.totalSize)}',
+                style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 14),
               ),
               const SizedBox(height: 6),
               Text(
                 'Updated ${_formatDate(pack.updatedAt)}',
-                style: const TextStyle(color: Colors.white54, fontSize: 12),
+                style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 12),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        Text(
+        const SizedBox(height: 20),
+        const Text(
           'Stickers',
-          style: Theme.of(context).textTheme.titleMedium,
+          style: TextStyle(
+            color: CupertinoColors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 12),
         if (stickers.isEmpty)
           GlassCard(
+            padding: const EdgeInsets.all(24),
             child: Column(
               children: const [
-                Icon(Icons.auto_awesome, size: 28),
-                SizedBox(height: 8),
-                Text('No stickers yet. Tap + to add one.'),
+                Icon(CupertinoIcons.smiley, size: 32, color: Color(0xFF8E8E93)),
+                SizedBox(height: 12),
+                Text(
+                  'No stickers yet. Tap + to add one.',
+                  style: TextStyle(color: Color(0xFF8E8E93)),
+                ),
               ],
             ),
           )
@@ -252,56 +306,62 @@ class _StickerTile extends ConsumerWidget {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => GlassCard(
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Sticker Actions'),
-            const SizedBox(height: 12),
-            TextField(
+            const Text(
+              'Sticker Actions',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: CupertinoColors.white),
+            ),
+            const SizedBox(height: 16),
+            CupertinoTextField(
               controller: nameController,
-              decoration: const InputDecoration(labelText: 'Sticker name'),
+              placeholder: 'Sticker name',
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C2C2E),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              style: const TextStyle(color: CupertinoColors.white),
             ),
             const SizedBox(height: 12),
-            FilledButton.icon(
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              borderRadius: BorderRadius.circular(14),
+              color: const Color(0xFF2C2C2E),
               onPressed: () async {
                 final name = nameController.text.trim();
                 if (name.isEmpty) return;
-                await ref
-                    .read(stickerRepositoryProvider)
-                    .renameSticker(sticker.id, name);
+                await ref.read(stickerRepositoryProvider).renameSticker(sticker.id, name);
                 if (context.mounted) Navigator.of(context).pop();
               },
-              icon: const Icon(Icons.save),
-              label: const Text('Save Name'),
+              child: const Text('Save Name'),
             ),
-            OutlinedButton.icon(
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 14),
               onPressed: () async {
-                await ref
-                    .read(packRepositoryProvider)
-                    .setCoverSticker(pack.id, sticker.id);
+                await ref.read(packRepositoryProvider).setCoverSticker(pack.id, sticker.id);
                 if (context.mounted) Navigator.of(context).pop();
               },
-              icon: const Icon(Icons.photo),
-              label: const Text('Set as Cover'),
+              child: const Text('Set as Cover'),
             ),
-            OutlinedButton.icon(
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 14),
               onPressed: () async {
                 await Share.shareXFiles([XFile(sticker.filePath)]);
                 if (context.mounted) Navigator.of(context).pop();
               },
-              icon: const Icon(Icons.share),
-              label: const Text('Share Sticker'),
+              child: const Text('Share Sticker'),
             ),
-            TextButton.icon(
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 14),
               onPressed: () async {
-                await ref
-                    .read(stickerRepositoryProvider)
-                    .deleteSticker(sticker.id);
+                await ref.read(stickerRepositoryProvider).deleteSticker(sticker.id);
                 if (context.mounted) Navigator.of(context).pop();
               },
-              icon: const Icon(Icons.delete_outline),
-              label: const Text('Delete Sticker'),
+              child: const Text('Delete Sticker', style: TextStyle(color: CupertinoColors.destructiveRed)),
             ),
           ],
         ),
@@ -320,44 +380,59 @@ class _PackExportSheet extends ConsumerWidget {
     final packAsync = ref.watch(packSummaryProvider(packId));
     final stickersAsync = ref.watch(stickersForPackProvider(packId));
     return GlassCard(
+      padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Export Pack'),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: () => _export(
-              context,
-              ref,
-              packAsync,
-              stickersAsync,
-              PackExportType.zip,
-            ),
-            icon: const Icon(Icons.archive),
-            label: const Text('ZIP Archive'),
+          const Text(
+            'Export Pack',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: CupertinoColors.white),
           ),
-          OutlinedButton.icon(
-            onPressed: () => _export(
-              context,
-              ref,
-              packAsync,
-              stickersAsync,
-              PackExportType.whatsapp,
+          const SizedBox(height: 16),
+          CupertinoButton(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            borderRadius: BorderRadius.circular(14),
+            color: const Color(0xFF2C2C2E),
+            onPressed: () => _export(context, ref, packAsync, stickersAsync, PackExportType.zip),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(CupertinoIcons.archivebox),
+                SizedBox(width: 8),
+                Text('ZIP Archive'),
+              ],
             ),
-            icon: const Icon(Icons.chat),
-            label: const Text('WhatsApp Pack'),
           ),
-          OutlinedButton.icon(
-            onPressed: () => _export(
-              context,
-              ref,
-              packAsync,
-              stickersAsync,
-              PackExportType.telegram,
+          const SizedBox(height: 8),
+          CupertinoButton(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            borderRadius: BorderRadius.circular(14),
+            color: const Color(0xFF2C2C2E),
+            onPressed: () => _export(context, ref, packAsync, stickersAsync, PackExportType.whatsapp),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(CupertinoIcons.chat_bubble_2),
+                SizedBox(width: 8),
+                Text('WhatsApp Pack'),
+              ],
             ),
-            icon: const Icon(Icons.send),
-            label: const Text('Telegram Pack'),
+          ),
+          const SizedBox(height: 8),
+          CupertinoButton(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            borderRadius: BorderRadius.circular(14),
+            color: const Color(0xFF2C2C2E),
+            onPressed: () => _export(context, ref, packAsync, stickersAsync, PackExportType.telegram),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(CupertinoIcons.paperplane),
+                SizedBox(width: 8),
+                Text('Telegram Pack'),
+              ],
+            ),
           ),
         ],
       ),

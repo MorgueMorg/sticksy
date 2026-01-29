@@ -4,9 +4,11 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:collection/collection.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:uuid/uuid.dart';
@@ -127,29 +129,33 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
 
     return GradientScaffold(
       appBar: AppBar(
-        title: const Text('Sticker Workshop'),
+        leading: IconButton(
+          icon: const Icon(CupertinoIcons.back),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text('Workshop'),
         actions: [
           IconButton(
             tooltip: 'Canvas Settings',
-            icon: const Icon(Icons.tune),
+            icon: const Icon(CupertinoIcons.slider_horizontal_3),
             onPressed: () =>
                 _showCanvasSettingsSheet(context, state, controller),
           ),
           IconButton(
             tooltip: 'Rename',
-            icon: const Icon(Icons.edit),
+            icon: const Icon(CupertinoIcons.pencil),
             onPressed: () => _showRenameDialog(context, controller),
           ),
           IconButton(
             tooltip: 'Export',
-            icon: const Icon(Icons.file_upload_outlined),
+            icon: const Icon(CupertinoIcons.share),
             onPressed: state.isSaving
                 ? null
                 : () => _exportSticker(context, state, controller),
           ),
           IconButton(
             tooltip: 'Save',
-            icon: const Icon(Icons.check_circle_outline),
+            icon: const Icon(CupertinoIcons.checkmark_circle),
             onPressed: state.isSaving
                 ? null
                 : () => _saveSticker(context, state, controller),
@@ -183,7 +189,9 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
             Positioned.fill(
               child: Container(
                 color: Colors.black54,
-                child: const Center(child: CircularProgressIndicator()),
+                child: const Center(
+                  child: CupertinoActivityIndicator(color: CupertinoColors.white),
+                ),
               ),
             ),
         ],
@@ -1208,34 +1216,26 @@ class _EditorToolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: GlassCard(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _ToolIcon(icon: Icons.layers, label: 'BG', onTap: onBackground),
-            _ToolIcon(icon: Icons.text_fields, label: 'Text', onTap: onText),
+            _ToolIcon(icon: CupertinoIcons.square_stack_3d_up, label: 'BG', onTap: onBackground),
+            _ToolIcon(icon: CupertinoIcons.textformat, label: 'Text', onTap: onText),
+            _ToolIcon(icon: CupertinoIcons.smiley, label: 'Emoji', onTap: onEmoji),
+            _ToolIcon(icon: CupertinoIcons.square, label: 'Shape', onTap: onShape),
+            _ToolIcon(icon: CupertinoIcons.crop, label: 'Crop', onTap: onCrop),
             _ToolIcon(
-              icon: Icons.emoji_emotions,
-              label: 'Emoji',
-              onTap: onEmoji,
-            ),
-            _ToolIcon(icon: Icons.category, label: 'Shape', onTap: onShape),
-            _ToolIcon(icon: Icons.crop, label: 'Crop', onTap: onCrop),
-            _ToolIcon(
-              icon: state.isDrawing ? Icons.draw : Icons.edit,
+              icon: state.isDrawing ? CupertinoIcons.pencil : CupertinoIcons.pencil_outline,
               label: 'Draw',
               onTap: onDraw,
               active: state.isDrawing,
             ),
-            _ToolIcon(icon: Icons.tune, label: 'Filter', onTap: onFilter),
-            _ToolIcon(
-              icon: Icons.add_photo_alternate,
-              label: 'Add',
-              onTap: onImport,
-            ),
-            _ToolIcon(icon: Icons.auto_fix_high, label: 'AI', onTap: onAI),
+            _ToolIcon(icon: CupertinoIcons.slider_horizontal_3, label: 'Filter', onTap: onFilter),
+            _ToolIcon(icon: CupertinoIcons.photo_on_rectangle, label: 'Add', onTap: onImport),
+            _ToolIcon(icon: CupertinoIcons.wand_stars, label: 'AI', onTap: onAI),
           ],
         ),
       ),
@@ -1258,18 +1258,31 @@ class _ToolIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 20, color: active ? Colors.amber : null),
-            const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 10)),
-          ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 22,
+                color: active ? CupertinoColors.activeOrange : CupertinoColors.white,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: active ? CupertinoColors.activeOrange : const Color(0xFF8E8E93),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

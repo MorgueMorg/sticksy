@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,31 +19,48 @@ class PackListScreen extends ConsumerWidget {
     final packsAsync = ref.watch(packSummariesProvider);
     return GradientScaffold(
       appBar: AppBar(
-        title: const Text('Sticker Forge'),
+        title: const Text('Sticksy'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
+          CupertinoButton(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             onPressed: () => _showSettings(context, ref),
+            child: const Icon(CupertinoIcons.settings, color: CupertinoColors.white),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreatePackSheet(context, ref),
-        icon: const Icon(Icons.add),
-        label: const Text('New Pack'),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 24, right: 20),
+        child: FloatingActionButton.extended(
+          onPressed: () => _showCreatePackSheet(context, ref),
+          backgroundColor: const Color(0xFF2C2C2E),
+          elevation: 0,
+          icon: const Icon(CupertinoIcons.add, color: CupertinoColors.white),
+          label: const Text(
+            'New Pack',
+            style: TextStyle(
+              color: CupertinoColors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+            ),
+          ),
+        ),
       ),
       body: packsAsync.when(
         data: (packs) => packs.isEmpty
             ? _EmptyState(onCreate: () => _showCreatePackSheet(context, ref))
             : _PackList(
                 packs: packs,
-                onReorder: (ids) => ref
-                    .read(packRepositoryProvider)
-                    .reorderPacks(ids),
+                onReorder: (ids) =>
+                    ref.read(packRepositoryProvider).reorderPacks(ids),
               ),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+          child: CupertinoActivityIndicator(color: CupertinoColors.white),
+        ),
         error: (error, _) => Center(
-          child: Text('Failed to load packs: $error'),
+          child: Text(
+            'Failed to load packs: $error',
+            style: const TextStyle(color: Color(0xFF8E8E93)),
+          ),
         ),
       ),
     );
@@ -54,18 +72,35 @@ class PackListScreen extends ConsumerWidget {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => GlassCard(
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Create Sticker Pack'),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(hintText: 'Pack name'),
+            const Text(
+              'Create Sticker Pack',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: CupertinoColors.white,
+              ),
             ),
-            const SizedBox(height: 12),
-            FilledButton(
+            const SizedBox(height: 16),
+            CupertinoTextField(
+              controller: controller,
+              placeholder: 'Pack name',
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C2C2E),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              style: const TextStyle(color: CupertinoColors.white),
+            ),
+            const SizedBox(height: 20),
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              borderRadius: BorderRadius.circular(14),
+              color: const Color(0xFF2C2C2E),
               onPressed: () async {
                 final name = controller.text.trim();
                 if (name.isEmpty) return;
@@ -117,7 +152,7 @@ class _PackListState extends State<_PackList> {
   @override
   Widget build(BuildContext context) {
     return ReorderableListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
       itemCount: _packs.length,
       onReorder: (oldIndex, newIndex) {
         setState(() {
@@ -150,31 +185,49 @@ class _PackCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final coverId = pack.coverStickerId;
     return GlassCard(
-      child: InkWell(
-        onTap: () => context.go('/pack/${pack.id}'),
-        borderRadius: BorderRadius.circular(24),
-        child: Row(
-          children: [
-            _PackCover(coverId: coverId),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(pack.name, style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${pack.stickerCount} stickers • '
-                    '${_formatBytes(pack.totalSize)}',
-                  ),
-                ],
+      padding: const EdgeInsets.all(16),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.go('/pack/${pack.id}'),
+          borderRadius: BorderRadius.circular(20),
+          child: Row(
+            children: [
+              _PackCover(coverId: coverId),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      pack.name,
+                      style: const TextStyle(
+                        color: CupertinoColors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '${pack.stickerCount} stickers • ${_formatBytes(pack.totalSize)}',
+                      style: const TextStyle(
+                        color: Color(0xFF8E8E93),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.more_horiz),
-              onPressed: () => _showPackActions(context, ref, pack),
-            ),
-          ],
+              CupertinoButton(
+                padding: const EdgeInsets.all(8),
+                onPressed: () => _showPackActions(context, ref, pack),
+                child: const Icon(
+                  CupertinoIcons.ellipsis,
+                  color: CupertinoColors.white,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -190,42 +243,62 @@ class _PackCard extends ConsumerWidget {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => GlassCard(
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Pack Actions'),
-            const SizedBox(height: 12),
-            TextField(
+            const Text(
+              'Pack Actions',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: CupertinoColors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
+            CupertinoTextField(
               controller: controller,
-              decoration: const InputDecoration(labelText: 'Rename pack'),
+              placeholder: 'Rename pack',
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C2C2E),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              style: const TextStyle(color: CupertinoColors.white),
             ),
             const SizedBox(height: 12),
-            FilledButton.icon(
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              borderRadius: BorderRadius.circular(14),
+              color: const Color(0xFF2C2C2E),
               onPressed: () async {
                 final name = controller.text.trim();
                 if (name.isEmpty) return;
                 await ref.read(packRepositoryProvider).renamePack(pack.id, name);
                 if (context.mounted) Navigator.of(context).pop();
               },
-              icon: const Icon(Icons.save_outlined),
-              label: const Text('Save Name'),
+              child: const Text('Save Name'),
             ),
-            OutlinedButton.icon(
+            const SizedBox(height: 8),
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 14),
               onPressed: () async {
                 await ref.read(packRepositoryProvider).duplicatePack(pack.id);
                 if (context.mounted) Navigator.of(context).pop();
               },
-              icon: const Icon(Icons.copy),
-              label: const Text('Duplicate Pack'),
+              child: const Text('Duplicate Pack'),
             ),
-            TextButton.icon(
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 14),
               onPressed: () async {
                 await ref.read(packRepositoryProvider).deletePack(pack.id);
                 if (context.mounted) Navigator.of(context).pop();
               },
-              icon: const Icon(Icons.delete_outline),
-              label: const Text('Delete Pack'),
+              child: const Text(
+                'Delete Pack',
+                style: TextStyle(color: CupertinoColors.destructiveRed),
+              ),
             ),
           ],
         ),
@@ -257,7 +330,7 @@ class _PackCover extends ConsumerWidget {
       data: (sticker) {
         if (sticker == null) return _placeholder();
         return ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           child: Image.file(
             File(sticker.filePath),
             width: 72,
@@ -276,10 +349,14 @@ class _PackCover extends ConsumerWidget {
       width: 72,
       height: 72,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
+        color: CupertinoColors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: const Icon(Icons.photo, color: Colors.white54),
+      child: const Icon(
+        CupertinoIcons.photo,
+        color: Color(0xFF8E8E93),
+        size: 28,
+      ),
     );
   }
 }
@@ -292,19 +369,45 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: GlassCard(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.collections_bookmark, size: 36),
-            const SizedBox(height: 12),
-            const Text('Create your first sticker pack'),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: onCreate,
-              child: const Text('Start a Pack'),
-            ),
-          ],
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: GlassCard(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: CupertinoColors.white.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(40),
+                ),
+                child: const Icon(
+                  CupertinoIcons.collections_solid,
+                  size: 40,
+                  color: CupertinoColors.white,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Create your first sticker pack',
+                style: TextStyle(
+                  color: CupertinoColors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 20),
+              CupertinoButton(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                borderRadius: BorderRadius.circular(14),
+                color: const Color(0xFF2C2C2E),
+                onPressed: onCreate,
+                child: const Text('Start a Pack'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -317,6 +420,7 @@ class _SettingsSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GlassCard(
+      padding: const EdgeInsets.all(24),
       child: FutureBuilder<int>(
         future: ref.read(cacheServiceProvider).getCacheSize(),
         builder: (context, snapshot) {
@@ -325,17 +429,36 @@ class _SettingsSheet extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('Storage & Cache'),
+              const Text(
+                'Storage & Cache',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: CupertinoColors.white,
+                ),
+              ),
               const SizedBox(height: 12),
-              Text('Cache size: ${_formatBytes(size)}'),
-              const SizedBox(height: 12),
-              FilledButton.icon(
+              Text(
+                'Cache size: ${_formatBytes(size)}',
+                style: const TextStyle(color: Color(0xFF8E8E93)),
+              ),
+              const SizedBox(height: 16),
+              CupertinoButton(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                borderRadius: BorderRadius.circular(14),
+                color: const Color(0xFF2C2C2E),
                 onPressed: () async {
                   await ref.read(cacheServiceProvider).clearCache();
                   if (context.mounted) Navigator.of(context).pop();
                 },
-                icon: const Icon(Icons.cleaning_services),
-                label: const Text('Clear Cache'),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(CupertinoIcons.trash),
+                    SizedBox(width: 8),
+                    Text('Clear Cache'),
+                  ],
+                ),
               ),
             ],
           );

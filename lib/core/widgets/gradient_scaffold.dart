@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// Dark charcoal scaffold with subtle textured gradient (3D Object Builder style).
 class GradientScaffold extends StatelessWidget {
   const GradientScaffold({
     super.key,
@@ -37,15 +38,16 @@ class _GradientBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF1C1E2E),
-            const Color(0xFF0C0D14),
-            const Color(0xFF1A1433),
+            Color(0xFF121214),
+            Color(0xFF0C0D14),
+            Color(0xFF0A0A0C),
           ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          stops: [0.0, 0.5, 1.0],
         ),
       ),
       child: const SizedBox.expand(),
