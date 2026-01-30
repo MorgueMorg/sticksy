@@ -225,9 +225,6 @@ class PackExportService {
     }
 
     final zipData = ZipEncoder().encode(archive);
-    if (zipData == null) {
-      throw StateError('Failed to encode pack archive.');
-    }
 
     final fileName =
         '${pack.name.replaceAll(' ', '_').toLowerCase()}_${type.name}.zip';

@@ -5,10 +5,7 @@ import '../../../core/config/onboarding_storage.dart';
 import '../../../core/widgets/gradient_scaffold.dart';
 
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({
-    super.key,
-    required this.onComplete,
-  });
+  const OnboardingScreen({super.key, required this.onComplete});
 
   final VoidCallback onComplete;
 
@@ -171,7 +168,7 @@ class _OnboardingPage extends StatelessWidget {
               borderRadius: BorderRadius.circular(80),
               boxShadow: [
                 BoxShadow(
-                  color: CupertinoColors.activeBlue.withValues(alpha: 0.15),
+                  color: CupertinoColors.systemIndigo.withValues(alpha: 0.15),
                   blurRadius: 40,
                   spreadRadius: 0,
                 ),

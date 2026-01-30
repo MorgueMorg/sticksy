@@ -20,6 +20,7 @@ class SettingsScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
+              Image.asset('assets/icons/set.png', width: 150, height: 150),
               StickBtn(
                 onTap: () {
                   stickWbLnch(context, StickSetUrl.setone);
