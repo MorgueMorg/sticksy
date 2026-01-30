@@ -13,7 +13,9 @@ void stickWbLnch(BuildContext context, String djlrf) async {
 }
 
 class StickSetUrl {
-  static const String setone = 'https://pub.dev/';
-  static const String settwo = 'https://pub.dev/';
-  static const String setthree = 'https://pub.dev/';
+  static const String setone =
+      'https://www.termsfeed.com/live/d522b279-66da-4876-adb0-99bf978f34d9';
+  static const String settwo =
+      'https://www.termsfeed.com/live/830b24eb-7c46-4cc7-abdc-ef6c50ee5554';
+  static const String setthree = 'https://form.jotform.com/260295634784467';
 }
