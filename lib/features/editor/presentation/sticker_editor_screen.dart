@@ -1231,24 +1231,35 @@ class _EditorToolbar extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: GlassCard(
         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _ToolIcon(icon: CupertinoIcons.square_stack_3d_up, label: 'BG', onTap: onBackground),
-            _ToolIcon(icon: CupertinoIcons.textformat, label: 'Text', onTap: onText),
-            _ToolIcon(icon: CupertinoIcons.smiley, label: 'Emoji', onTap: onEmoji),
-            _ToolIcon(icon: CupertinoIcons.square, label: 'Shape', onTap: onShape),
-            _ToolIcon(icon: CupertinoIcons.crop, label: 'Crop', onTap: onCrop),
-            _ToolIcon(
-              icon: state.isDrawing ? CupertinoIcons.pencil : CupertinoIcons.pencil_outline,
-              label: 'Draw',
-              onTap: onDraw,
-              active: state.isDrawing,
-            ),
-            _ToolIcon(icon: CupertinoIcons.slider_horizontal_3, label: 'Filter', onTap: onFilter),
-            _ToolIcon(icon: CupertinoIcons.photo_on_rectangle, label: 'Add', onTap: onImport),
-            _ToolIcon(icon: CupertinoIcons.wand_stars, label: 'AI', onTap: onAI),
-          ],
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _ToolIcon(icon: CupertinoIcons.square_stack_3d_up, label: 'BG', onTap: onBackground),
+              SizedBox(width: 6.w),
+              _ToolIcon(icon: CupertinoIcons.textformat, label: 'Text', onTap: onText),
+              SizedBox(width: 6.w),
+              _ToolIcon(icon: CupertinoIcons.smiley, label: 'Emoji', onTap: onEmoji),
+              SizedBox(width: 6.w),
+              _ToolIcon(icon: CupertinoIcons.square, label: 'Shape', onTap: onShape),
+              SizedBox(width: 6.w),
+              _ToolIcon(icon: CupertinoIcons.crop, label: 'Crop', onTap: onCrop),
+              SizedBox(width: 6.w),
+              _ToolIcon(
+                icon: state.isDrawing ? CupertinoIcons.pencil : CupertinoIcons.pencil_outline,
+                label: 'Draw',
+                onTap: onDraw,
+                active: state.isDrawing,
+              ),
+              SizedBox(width: 6.w),
+              _ToolIcon(icon: CupertinoIcons.slider_horizontal_3, label: 'Filter', onTap: onFilter),
+              SizedBox(width: 6.w),
+              _ToolIcon(icon: CupertinoIcons.photo_on_rectangle, label: 'Add', onTap: onImport),
+              SizedBox(width: 6.w),
+              _ToolIcon(icon: CupertinoIcons.wand_stars, label: 'AI', onTap: onAI),
+            ],
+          ),
         ),
       ),
     );

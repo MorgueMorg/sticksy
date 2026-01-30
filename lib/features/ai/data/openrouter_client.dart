@@ -22,10 +22,7 @@ class OpenRouterClient {
     bool jsonMode = false,
   }) async {
     final messages = [
-      {
-        'role': 'user',
-        'content': _buildContent(prompt, images),
-      },
+      {'role': 'user', 'content': _buildContent(prompt, images)},
     ];
 
     final body = <String, dynamic>{
@@ -36,20 +33,23 @@ class OpenRouterClient {
     };
 
     try {
-      final response = await _client.post(
-        Uri.parse('$baseUrl/chat/completions'),
-        headers: _headers(),
-        body: jsonEncode(body),
-      ).timeout(const Duration(seconds: 45));
+      final response = await _client
+          .post(
+            Uri.parse('$baseUrl/chat/completions'),
+            headers: _headers(),
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 45));
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         String errorMsg = 'Ошибка API ${response.statusCode}';
         try {
           final errorBody = jsonDecode(response.body) as Map<String, dynamic>?;
           final error = errorBody?['error'] as Map<String, dynamic>?;
-          errorMsg = error?['message'] as String? ?? 
-                    errorBody?['message'] as String? ?? 
-                    response.body;
+          errorMsg =
+              error?['message'] as String? ??
+              errorBody?['message'] as String? ??
+              response.body;
         } catch (_) {
           errorMsg = response.body.isNotEmpty ? response.body : errorMsg;
         }
@@ -70,8 +70,11 @@ class OpenRouterClient {
     } on StateError {
       rethrow;
     } catch (e) {
-      if (e.toString().contains('timeout') || e.toString().contains('TimeoutException')) {
-        throw StateError('Превышено время ожидания ответа от API. Попробуйте позже.');
+      if (e.toString().contains('timeout') ||
+          e.toString().contains('TimeoutException')) {
+        throw StateError(
+          'Превышено время ожидания ответа от API. Попробуйте позже.',
+        );
       }
       throw StateError('Ошибка подключения к API: ${e.toString()}');
     }
@@ -81,12 +84,15 @@ class OpenRouterClient {
     return {
       'Authorization': 'Bearer $apiKey',
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://stickerforge.app',
-      'X-Title': 'Sticker Forge',
+      'HTTP-Referer': 'https://sticksy.app',
+      'X-Title': 'Sticksy',
     };
   }
 
-  List<Map<String, Object>> _buildContent(String prompt, List<Uint8List>? images) {
+  List<Map<String, Object>> _buildContent(
+    String prompt,
+    List<Uint8List>? images,
+  ) {
     final content = <Map<String, Object>>[
       {'type': 'text', 'text': prompt},
     ];

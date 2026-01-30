@@ -17,7 +17,7 @@ void main() {
       missingKeys: const ['OPENROUTER_MODEL'],
       errorMessage: 'Missing env',
     );
-    await tester.pumpWidget(StickerForgeApp(envResult: envResult));
-    expect(find.text('Sticker Forge'), findsWidgets);
+    await tester.pumpWidget(SticksyApp(envResult: envResult));
+    expect(find.text('Sticksy'), findsWidgets);
   });
 }

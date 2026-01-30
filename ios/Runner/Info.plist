@@ -5,7 +5,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-		<string>Sticker Forge</string>
+		<string>Sticksy</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
@@ -46,11 +46,11 @@
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>Sticker Forge needs access to your photo library to import images.</string>
+		<string>Sticksy needs access to your photo library to import images.</string>
 		<key>NSPhotoLibraryAddUsageDescription</key>
-		<string>Sticker Forge saves exported stickers to your library.</string>
+		<string>Sticksy saves exported stickers to your library.</string>
 		<key>NSCameraUsageDescription</key>
-		<string>Sticker Forge uses the camera to capture sticker photos.</string>
+		<string>Sticksy uses the camera to capture sticker photos.</string>
 		<key>UIStatusBarHidden</key>
 		<false/>
 	</dict>

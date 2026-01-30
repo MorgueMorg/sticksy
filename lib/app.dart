@@ -11,16 +11,16 @@ import 'core/widgets/glass_card.dart';
 import 'core/widgets/gradient_scaffold.dart';
 import 'features/onboarding/presentation/onboarding_screen.dart';
 
-class StickerForgeApp extends ConsumerStatefulWidget {
-  const StickerForgeApp({super.key, required this.envResult});
+class SticksyApp extends ConsumerStatefulWidget {
+  const SticksyApp({super.key, required this.envResult});
 
   final EnvLoadResult envResult;
 
   @override
-  ConsumerState<StickerForgeApp> createState() => _StickerForgeAppState();
+  ConsumerState<SticksyApp> createState() => _SticksyAppState();
 }
 
-class _StickerForgeAppState extends ConsumerState<StickerForgeApp> {
+class _SticksyAppState extends ConsumerState<SticksyApp> {
   bool _allowWithoutAi = false;
   bool? _onboardingCompleted;
   bool _loadingOnboarding = true;
@@ -101,10 +101,7 @@ class EnvErrorScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final missing = envResult.missingKeys;
     return GradientScaffold(
-      appBar: AppBar(
-        title: const Text('Sticksy'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Sticksy'), centerTitle: true),
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: 520.w),
@@ -116,7 +113,10 @@ class EnvErrorScreen extends StatelessWidget {
               children: [
                 Text(
                   'Missing environment configuration',
-                  style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 SizedBox(height: 12.h),
                 Text(
@@ -134,8 +134,9 @@ class EnvErrorScreen extends StatelessWidget {
                         .map(
                           (key) => Chip(
                             label: Text(key),
-                            backgroundColor:
-                                Theme.of(context).colorScheme.surface,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.surface,
                           ),
                         )
                         .toList(),

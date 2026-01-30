@@ -249,11 +249,9 @@ class PackExportService {
       'stickers': stickers.map(_stickerMetadata).toList(),
     };
     final metadataBytes = utf8.encode(jsonEncode(metadata));
-    archive.addFile(ArchiveFile(
-      'metadata.json',
-      metadataBytes.length,
-      metadataBytes,
-    ));
+    archive.addFile(
+      ArchiveFile('metadata.json', metadataBytes.length, metadataBytes),
+    );
 
     await _addStickerFiles(archive, stickers);
   }
@@ -285,9 +283,7 @@ class PackExportService {
         ? await _buildTrayImage(stickers.first.filePath)
         : Uint8List(0);
     if (trayImage.isNotEmpty) {
-      archive.addFile(
-        ArchiveFile('tray.png', trayImage.length, trayImage),
-      );
+      archive.addFile(ArchiveFile('tray.png', trayImage.length, trayImage));
     }
 
     final contents = {
@@ -295,17 +291,18 @@ class PackExportService {
         {
           'identifier': pack.id,
           'name': pack.name,
-          'publisher': 'Sticker Forge',
+          'publisher': 'Sticksy',
           'tray_image_file': 'tray.png',
           'image_data_version': '1',
           'avoid_cache': false,
-          'publisher_email': 'support@stickerforge.app',
-          'publisher_website': 'https://stickerforge.app',
-          'privacy_policy_website': 'https://stickerforge.app/privacy',
-          'license_agreement_website': 'https://stickerforge.app/license',
+          // TODO Добавить доки
+          'publisher_email': 'support@sticksy.app',
+          'publisher_website': 'https://sticksy.app',
+          'privacy_policy_website': 'https://sticksy.app/privacy',
+          'license_agreement_website': 'https://sticksy.app/license',
           'stickers': stickerEntries,
           'exported_at': exportedAt,
-        }
+        },
       ],
     };
 
@@ -331,11 +328,9 @@ class PackExportService {
           'Use @stickers bot to import these WebP/PNG stickers on Telegram.',
     };
     final metadataBytes = utf8.encode(jsonEncode(metadata));
-    archive.addFile(ArchiveFile(
-      'telegram_pack.json',
-      metadataBytes.length,
-      metadataBytes,
-    ));
+    archive.addFile(
+      ArchiveFile('telegram_pack.json', metadataBytes.length, metadataBytes),
+    );
   }
 
   Future<void> _addStickerFiles(
@@ -362,10 +357,6 @@ class PackExportService {
 
   Future<Uint8List> _buildTrayImage(String stickerPath) async {
     final bytes = await File(stickerPath).readAsBytes();
-    return imageExportService.encodePng(
-      bytes,
-      width: 96,
-      height: 96,
-    );
+    return imageExportService.encodePng(bytes, width: 96, height: 96);
   }
 }

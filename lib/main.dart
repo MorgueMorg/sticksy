@@ -11,14 +11,12 @@ Future<void> main() async {
   final envResult = await EnvConfigLoader.load();
   runApp(
     ProviderScope(
-      overrides: [
-        envLoadResultProvider.overrideWithValue(envResult),
-      ],
+      overrides: [envLoadResultProvider.overrideWithValue(envResult)],
       child: ScreenUtilInit(
         designSize: const Size(375, 812),
         minTextAdapt: true,
         splitScreenMode: true,
-        builder: (_, child) => StickerForgeApp(envResult: envResult),
+        builder: (_, child) => SticksyApp(envResult: envResult),
       ),
     ),
   );
