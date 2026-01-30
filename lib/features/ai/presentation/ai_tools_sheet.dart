@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../core/di/providers.dart';
 import '../../../core/utils/result.dart';
@@ -54,27 +55,27 @@ class _AiToolsSheetState extends ConsumerState<AiToolsSheet> {
     final aiRepository = ref.watch(aiRepositoryProvider);
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: GlassCard(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'AI Studio',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               TextField(
                 controller: _promptController,
                 decoration: const InputDecoration(
                   hintText: 'Describe a theme or idea (optional)',
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Wrap(
-                spacing: 12,
-                runSpacing: 12,
+                spacing: 12.w,
+                runSpacing: 12.h,
                 children: [
                   _ToolButton(
                     icon: Icons.auto_fix_high,
@@ -173,11 +174,11 @@ class _AiToolsSheetState extends ConsumerState<AiToolsSheet> {
                 ],
               ),
               if (_loading) ...[
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 const LinearProgressIndicator(),
               ],
               if (_error != null) ...[
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 Text(
                   _error!,
                   style: const TextStyle(color: Colors.redAccent),
@@ -205,25 +206,25 @@ class _ToolButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 140,
+      width: 140.w,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         child: Ink(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12.r),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16.r),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 24),
-              const SizedBox(height: 8),
+              Icon(icon, size: 24.r),
+              SizedBox(height: 8.h),
               Text(
                 label,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 12),
+                style: TextStyle(fontSize: 12.sp),
               ),
             ],
           ),

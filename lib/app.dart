@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'core/config/app_router.dart';
 import 'core/config/app_theme.dart';
@@ -106,29 +107,29 @@ class EnvErrorScreen extends StatelessWidget {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
+          constraints: BoxConstraints(maxWidth: 520.w),
           child: GlassCard(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24.r),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
+                Text(
                   'Missing environment configuration',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 Text(
                   envResult.errorMessage ??
                       'Create a .env file based on .env.example and add the '
                           'OpenRouter configuration.',
                   style: const TextStyle(color: Colors.white70),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
                 if (missing.isNotEmpty)
                   Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                    spacing: 8.w,
+                    runSpacing: 8.h,
                     children: missing
                         .map(
                           (key) => Chip(
@@ -139,25 +140,25 @@ class EnvErrorScreen extends StatelessWidget {
                         )
                         .toList(),
                   ),
-                const SizedBox(height: 20),
+                SizedBox(height: 20.h),
                 CupertinoButton(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  borderRadius: BorderRadius.circular(14),
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  borderRadius: BorderRadius.circular(14.r),
                   color: const Color(0xFF2C2C2E),
                   onPressed: onContinue,
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(CupertinoIcons.bolt_slash, size: 20),
-                      SizedBox(width: 8),
-                      Text('Continue without AI'),
+                      Icon(CupertinoIcons.bolt_slash, size: 20.r),
+                      SizedBox(width: 8.w),
+                      const Text('Continue without AI'),
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                const Text(
+                SizedBox(height: 8.h),
+                Text(
                   'Restart the app after updating .env to enable AI tools.',
-                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                  style: TextStyle(color: Colors.white54, fontSize: 12.sp),
                 ),
               ],
             ),

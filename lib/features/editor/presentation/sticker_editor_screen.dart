@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/di/providers.dart';
@@ -168,7 +169,7 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
               Expanded(
                 child: Center(child: _buildCanvas(context, state, controller)),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               _EditorToolbar(
                 state: state,
                 onBackground: () => _showBackgroundSheet(context, controller),
@@ -181,7 +182,7 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
                 onImport: () => _pickImage(controller),
                 onAI: () => _showAiSheet(context, state, controller),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
             ],
           ),
           if (state.isSaving)
@@ -434,10 +435,10 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Background'),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Wrap(
-              spacing: 12,
-              runSpacing: 12,
+              spacing: 12.w,
+              runSpacing: 12.h,
               children: colors
                   .map(
                     (color) => GestureDetector(
@@ -455,7 +456,7 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
                         Navigator.of(context).pop();
                       },
                       child: CircleAvatar(
-                        radius: 22,
+                        radius: 22.r,
                         backgroundColor: color == Colors.transparent
                             ? Colors.white24
                             : color,
@@ -467,7 +468,7 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
                   )
                   .toList(),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             FilledButton.icon(
               onPressed: () {
                 controller.setBackground(
@@ -504,14 +505,14 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text('Add Text'),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               TextField(
                 controller: textController,
                 decoration: const InputDecoration(hintText: 'Your message'),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Wrap(
-                spacing: 8,
+                spacing: 8.w,
                 children:
                     [
                           Colors.white,
@@ -525,17 +526,17 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
                           (color) => GestureDetector(
                             onTap: () => setState(() => selected = color),
                             child: CircleAvatar(
-                              radius: 16,
+                              radius: 16.r,
                               backgroundColor: color,
                               child: selected == color
-                                  ? const Icon(Icons.check, size: 16)
+                                  ? Icon(Icons.check, size: 16.r)
                                   : null,
                             ),
                           ),
                         )
                         .toList(),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               FilledButton(
                 onPressed: () {
                   if (textController.text.trim().isEmpty) return;
@@ -565,10 +566,10 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text('Emoji'),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Wrap(
-              spacing: 12,
-              runSpacing: 12,
+              spacing: 12.w,
+              runSpacing: 12.h,
               children: emojis
                   .map(
                     (emoji) => GestureDetector(
@@ -576,7 +577,7 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
                         controller.addEmojiLayer(emoji);
                         Navigator.of(context).pop();
                       },
-                      child: Text(emoji, style: const TextStyle(fontSize: 28)),
+                      child: Text(emoji, style: TextStyle(fontSize: 28.sp)),
                     ),
                   )
                   .toList(),
@@ -605,10 +606,10 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text('Shape'),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Wrap(
-              spacing: 12,
-              runSpacing: 12,
+              spacing: 12.w,
+              runSpacing: 12.h,
               children: shapes
                   .map(
                     (shape) => GestureDetector(
@@ -617,15 +618,15 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
                         Navigator.of(context).pop();
                       },
                       child: Container(
-                        width: 48,
-                        height: 48,
+                        width: 48.w,
+                        height: 48.h,
                         decoration: BoxDecoration(
                           color: Colors.white,
                           shape: shape == ShapeType.circle
                               ? BoxShape.circle
                               : BoxShape.rectangle,
                           borderRadius: shape == ShapeType.roundedSquare
-                              ? BorderRadius.circular(12)
+                              ? BorderRadius.circular(12.r)
                               : null,
                         ),
                       ),
@@ -656,7 +657,7 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Text('Filters'),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Text('Brightness: ${brightness.toStringAsFixed(2)}'),
               Slider(
                 value: brightness,
@@ -710,10 +711,10 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text('Canvas & Export'),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: 8.w,
+              runSpacing: 8.h,
               children: presets
                   .map(
                     (preset) => ChoiceChip(
@@ -730,7 +731,7 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
                   )
                   .toList(),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Row(
               children: [
                 const Text('Export format'),
@@ -839,10 +840,10 @@ class _StickerEditorScreenState extends ConsumerState<StickerEditorScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('AI Sticker Ideas'),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             ...ideas.map(
               (idea) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: EdgeInsets.only(bottom: 8.h),
                 child: Text('• $idea'),
               ),
             ),
@@ -872,7 +873,7 @@ class _StickerCanvas extends StatelessWidget {
   Widget build(BuildContext context) {
     final background = _buildBackground(state.background);
     return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(24.r),
       child: DecoratedBox(
         decoration: BoxDecoration(color: Colors.transparent),
         child: Stack(
@@ -982,12 +983,12 @@ class _LayerWidgetState extends State<_LayerWidget> {
     final decoratedChild = AnimatedContainer(
       duration: const Duration(milliseconds: 150),
       curve: Curves.easeOut,
-      padding: widget.selected ? const EdgeInsets.all(6) : EdgeInsets.zero,
+      padding: widget.selected ? EdgeInsets.all(6.r) : EdgeInsets.zero,
       decoration: BoxDecoration(
         border: widget.selected
-            ? Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.2)
+            ? Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.2.r)
             : null,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
       ),
       child: child,
     );
@@ -1110,7 +1111,7 @@ class _LayerWidgetState extends State<_LayerWidget> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text('Layer'),
-            const SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Row(
               children: [
                 const Text('Opacity'),
@@ -1227,9 +1228,9 @@ class _EditorToolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: 20.w),
       child: GlassCard(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -1273,22 +1274,22 @@ class _ToolIcon extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 6.h),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
-                size: 22,
+                size: 22.r,
                 color: active ? CupertinoColors.activeOrange : CupertinoColors.white,
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4.h),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 10.sp,
                   color: active ? CupertinoColors.activeOrange : const Color(0xFF8E8E93),
                 ),
               ),

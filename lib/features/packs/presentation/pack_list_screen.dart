@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:sticksy/features/settings/presentation/settings.dart';
 import 'package:uuid/uuid.dart';
 
@@ -27,7 +28,7 @@ class PackListScreen extends ConsumerWidget {
         title: const Text('Sticksy'),
         actions: [
           CupertinoButton(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
             onPressed: () {
               Navigator.of(
                 context,
@@ -41,18 +42,18 @@ class PackListScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 24, right: 20),
+        padding: EdgeInsets.only(bottom: 24.h, right: 20.w),
         child: FloatingActionButton.extended(
           onPressed: () => _showCreatePackSheet(context, ref),
           backgroundColor: const Color(0xFF2C2C2E),
           elevation: 0,
           icon: const Icon(CupertinoIcons.add, color: CupertinoColors.white),
-          label: const Text(
+          label: Text(
             'New Pack',
             style: TextStyle(
               color: CupertinoColors.white,
               fontWeight: FontWeight.w600,
-              fontSize: 15,
+              fontSize: 15.sp,
             ),
           ),
         ),
@@ -176,52 +177,52 @@ class _CreatePackSheetContentState extends State<_CreatePackSheetContent> {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(24.r),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             'Create Sticker Pack',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 20.sp,
               fontWeight: FontWeight.w600,
               color: CupertinoColors.white,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           CupertinoTextField(
             controller: _nameController,
             placeholder: 'Pack name',
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
             decoration: BoxDecoration(
               color: const Color(0xFF2C2C2E),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
             ),
             style: const TextStyle(color: CupertinoColors.white),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: 20.h),
+          Text(
             'Cover photo (optional)',
             style: TextStyle(
-              color: Color(0xFF8E8E93),
-              fontSize: 14,
+              color: const Color(0xFF8E8E93),
+              fontSize: 14.sp,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           if (_coverPath != null) ...[
             Row(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                   child: Image.file(
                     File(_coverPath!),
-                    width: 72,
-                    height: 72,
+                    width: 72.w,
+                    height: 72.h,
                     fit: BoxFit.cover,
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: CupertinoButton(
                     padding: EdgeInsets.zero,
@@ -236,40 +237,40 @@ class _CreatePackSheetContentState extends State<_CreatePackSheetContent> {
           Row(
             children: [
               CupertinoButton(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
                 color: const Color(0xFF2C2C2E),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
                 onPressed: () => _pickCover(ImageSource.gallery),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(CupertinoIcons.photo, size: 20),
-                    SizedBox(width: 8),
-                    Text('Gallery'),
+                    Icon(CupertinoIcons.photo, size: 20.r),
+                    SizedBox(width: 8.w),
+                    const Text('Gallery'),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8.w),
               CupertinoButton(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
                 color: const Color(0xFF2C2C2E),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
                 onPressed: () => _pickCover(ImageSource.camera),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(CupertinoIcons.camera, size: 20),
-                    SizedBox(width: 8),
-                    Text('Camera'),
+                    Icon(CupertinoIcons.camera, size: 20.r),
+                    SizedBox(width: 8.w),
+                    const Text('Camera'),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.h),
           CupertinoButton(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            borderRadius: BorderRadius.circular(14),
+            padding: EdgeInsets.symmetric(vertical: 14.h),
+            borderRadius: BorderRadius.circular(14.r),
             color: const Color(0xFF2C2C2E),
             onPressed: () async {
               final name = _nameController.text.trim();
@@ -312,7 +313,7 @@ class _PackListState extends State<_PackList> {
   @override
   Widget build(BuildContext context) {
     return ReorderableListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+      padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 100.h),
       itemCount: _packs.length,
       onReorder: (oldIndex, newIndex) {
         setState(() {
@@ -328,7 +329,7 @@ class _PackListState extends State<_PackList> {
         final pack = _packs[index];
         return Padding(
           key: ValueKey(pack.id),
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: EdgeInsets.only(bottom: 12.h),
           child: _PackCard(pack: pack),
         );
       },
@@ -345,41 +346,41 @@ class _PackCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final coverId = pack.coverStickerId;
     return GlassCard(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => context.go('/pack/${pack.id}'),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(20.r),
           child: Row(
             children: [
               _PackCover(coverId: coverId),
-              const SizedBox(width: 16),
+              SizedBox(width: 16.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       pack.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: CupertinoColors.white,
-                        fontSize: 17,
+                        fontSize: 17.sp,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6.h),
                     Text(
                       '${pack.stickerCount} stickers • ${_formatBytes(pack.totalSize)}',
-                      style: const TextStyle(
-                        color: Color(0xFF8E8E93),
-                        fontSize: 14,
+                      style: TextStyle(
+                        color: const Color(0xFF8E8E93),
+                        fontSize: 14.sp,
                       ),
                     ),
                   ],
                 ),
               ),
               CupertinoButton(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(8.r),
                 onPressed: () => _showPackActions(context, ref, pack),
                 child: const Icon(
                   CupertinoIcons.ellipsis,
@@ -406,7 +407,7 @@ class _PackCard extends ConsumerWidget {
         child: Consumer(
           builder: (context, ref, _) {
             return GlassCard(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24.r),
               child: _PackActionsSheetContent(
                 pack: pack,
                 nameController: controller,
@@ -437,29 +438,29 @@ class _PackActionsSheetContent extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             'Pack Actions',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 20.sp,
               fontWeight: FontWeight.w600,
               color: CupertinoColors.white,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           CupertinoTextField(
             controller: nameController,
             placeholder: 'Pack name',
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
             decoration: BoxDecoration(
               color: const Color(0xFF2C2C2E),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12.r),
             ),
             style: const TextStyle(color: CupertinoColors.white),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           CupertinoButton(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            borderRadius: BorderRadius.circular(14),
+            padding: EdgeInsets.symmetric(vertical: 14.h),
+            borderRadius: BorderRadius.circular(14.r),
             color: const Color(0xFF2C2C2E),
             onPressed: () async {
               final name = nameController.text.trim();
@@ -469,22 +470,22 @@ class _PackActionsSheetContent extends ConsumerWidget {
             },
             child: const Text('Save Name'),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: 20.h),
+          Text(
             'Cover photo',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 15.sp,
               fontWeight: FontWeight.w600,
               color: CupertinoColors.white,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8.h),
           Row(
             children: [
               CupertinoButton(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
                 color: const Color(0xFF2C2C2E),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
                 onPressed: () async {
                   final file = await picker.pickImage(source: ImageSource.gallery);
                   if (file == null || !context.mounted) return;
@@ -494,20 +495,20 @@ class _PackActionsSheetContent extends ConsumerWidget {
                     if (context.mounted) Navigator.of(context).pop();
                   }
                 },
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(CupertinoIcons.photo, size: 20),
-                    SizedBox(width: 8),
-                    Text('Gallery'),
+                    Icon(CupertinoIcons.photo, size: 20.r),
+                    SizedBox(width: 8.w),
+                    const Text('Gallery'),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8.w),
               CupertinoButton(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
                 color: const Color(0xFF2C2C2E),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
                 onPressed: () async {
                   final file = await picker.pickImage(source: ImageSource.camera);
                   if (file == null || !context.mounted) return;
@@ -517,12 +518,12 @@ class _PackActionsSheetContent extends ConsumerWidget {
                     if (context.mounted) Navigator.of(context).pop();
                   }
                 },
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(CupertinoIcons.camera, size: 20),
-                    SizedBox(width: 8),
-                    Text('Camera'),
+                    Icon(CupertinoIcons.camera, size: 20.r),
+                    SizedBox(width: 8.w),
+                    const Text('Camera'),
                   ],
                 ),
               ),
@@ -535,20 +536,20 @@ class _PackActionsSheetContent extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.only(top: 4),
+                  Padding(
+                    padding: EdgeInsets.only(top: 4.h),
                     child: Text(
                       'Or choose from pack',
-                      style: TextStyle(color: Color(0xFF8E8E93), fontSize: 13),
+                      style: TextStyle(color: const Color(0xFF8E8E93), fontSize: 13.sp),
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6.h),
                   SizedBox(
-                  height: 56,
+                  height: 56.h,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: stickers.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    separatorBuilder: (_, __) => SizedBox(width: 8.w),
                     itemBuilder: (context, index) {
                       final sticker = stickers[index];
                       final isCover = pack.coverStickerId == sticker.id;
@@ -558,16 +559,16 @@ class _PackActionsSheetContent extends ConsumerWidget {
                           if (context.mounted) Navigator.of(context).pop();
                         },
                         child: Container(
-                          width: 56,
-                          height: 56,
+                          width: 56.w,
+                          height: 56.h,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(10.r),
                             border: isCover
-                                ? Border.all(color: CupertinoColors.activeBlue, width: 2)
+                                ? Border.all(color: CupertinoColors.activeBlue, width: 2.r)
                                 : null,
                           ),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(10.r),
                             child: Image.file(
                               File(sticker.filePath),
                               fit: BoxFit.cover,
@@ -585,9 +586,9 @@ class _PackActionsSheetContent extends ConsumerWidget {
             error: (_, __) => const SizedBox.shrink(),
           ),
           if (pack.coverStickerId != null) ...[
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             CupertinoButton(
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              padding: EdgeInsets.symmetric(vertical: 10.h),
               onPressed: () async {
                 await ref.read(packRepositoryProvider).setCoverSticker(pack.id, null);
                 if (context.mounted) Navigator.of(context).pop();
@@ -595,9 +596,9 @@ class _PackActionsSheetContent extends ConsumerWidget {
               child: const Text('Remove cover', style: TextStyle(color: CupertinoColors.destructiveRed)),
             ),
           ],
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           CupertinoButton(
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            padding: EdgeInsets.symmetric(vertical: 14.h),
             onPressed: () async {
               await ref.read(packRepositoryProvider).duplicatePack(pack.id);
               if (context.mounted) Navigator.of(context).pop();
@@ -605,7 +606,7 @@ class _PackActionsSheetContent extends ConsumerWidget {
             child: const Text('Duplicate Pack'),
           ),
           CupertinoButton(
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            padding: EdgeInsets.symmetric(vertical: 14.h),
             onPressed: () async {
               await ref.read(packRepositoryProvider).deletePack(pack.id);
               if (context.mounted) Navigator.of(context).pop();
@@ -644,11 +645,11 @@ class _PackCover extends ConsumerWidget {
       data: (sticker) {
         if (sticker == null) return _placeholder();
         return ClipRRect(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(14.r),
           child: Image.file(
             File(sticker.filePath),
-            width: 72,
-            height: 72,
+            width: 72.w,
+            height: 72.h,
             fit: BoxFit.cover,
           ),
         );
@@ -660,16 +661,16 @@ class _PackCover extends ConsumerWidget {
 
   Widget _placeholder() {
     return Container(
-      width: 72,
-      height: 72,
+      width: 72.w,
+      height: 72.h,
       decoration: BoxDecoration(
         color: CupertinoColors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(14.r),
       ),
-      child: const Icon(
+      child: Icon(
         CupertinoIcons.photo,
-        color: Color(0xFF8E8E93),
-        size: 28,
+        color: const Color(0xFF8E8E93),
+        size: 28.r,
       ),
     );
   }
@@ -684,41 +685,41 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32.r),
         child: GlassCard(
-          padding: const EdgeInsets.all(32),
+          padding: EdgeInsets.all(32.r),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 80,
-                height: 80,
+                width: 80.w,
+                height: 80.h,
                 decoration: BoxDecoration(
                   color: CupertinoColors.white.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(40),
+                  borderRadius: BorderRadius.circular(40.r),
                 ),
-                child: const Icon(
+                child: Icon(
                   CupertinoIcons.collections_solid,
-                  size: 40,
+                  size: 40.r,
                   color: CupertinoColors.white,
                 ),
               ),
-              const SizedBox(height: 20),
-              const Text(
+              SizedBox(height: 20.h),
+              Text(
                 'Create your first sticker pack',
                 style: TextStyle(
                   color: CupertinoColors.white,
-                  fontSize: 17,
+                  fontSize: 17.sp,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20.h),
               CupertinoButton(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 14,
+                padding: EdgeInsets.symmetric(
+                  horizontal: 32.w,
+                  vertical: 14.h,
                 ),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(14.r),
                 color: const Color(0xFF2C2C2E),
                 onPressed: onCreate,
                 child: const Text('Start a Pack'),

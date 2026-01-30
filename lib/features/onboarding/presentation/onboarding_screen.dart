@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../core/config/onboarding_storage.dart';
 import '../../../core/widgets/gradient_scaffold.dart';
@@ -71,7 +72,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+              padding: EdgeInsets.fromLTRB(24.w, 16.h, 24.w, 32.h),
               child: Column(
                 children: [
                   Row(
@@ -80,24 +81,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       _pages.length,
                       (index) => AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: _currentPage == index ? 24 : 8,
-                        height: 8,
+                        margin: EdgeInsets.symmetric(horizontal: 4.w),
+                        width: _currentPage == index ? 24.w : 8.w,
+                        height: 8.h,
                         decoration: BoxDecoration(
                           color: _currentPage == index
                               ? CupertinoColors.white
                               : CupertinoColors.white.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(4.r),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24.h),
                   SizedBox(
                     width: double.infinity,
                     child: CupertinoButton(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      borderRadius: BorderRadius.circular(14),
+                      padding: EdgeInsets.symmetric(vertical: 16.h),
+                      borderRadius: BorderRadius.circular(14.r),
                       color: const Color(0xFF2C2C2E),
                       onPressed: _currentPage == _pages.length - 1
                           ? _finish
@@ -111,9 +112,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         _currentPage == _pages.length - 1
                             ? 'Get Started'
                             : 'Continue',
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: CupertinoColors.white,
-                          fontSize: 17,
+                          fontSize: 17.sp,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -155,49 +156,49 @@ class _OnboardingPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
+      padding: EdgeInsets.symmetric(horizontal: 32.w),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 40),
+          SizedBox(height: 40.h),
           Container(
-            width: 160,
-            height: 160,
+            width: 160.w,
+            height: 160.h,
             decoration: BoxDecoration(
               color: CupertinoColors.white.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(80),
+              borderRadius: BorderRadius.circular(80.r),
               boxShadow: [
                 BoxShadow(
                   color: CupertinoColors.systemIndigo.withValues(alpha: 0.15),
-                  blurRadius: 40,
+                  blurRadius: 40.r,
                   spreadRadius: 0,
                 ),
               ],
             ),
             child: Icon(
               icon,
-              size: 72,
+              size: 72.r,
               color: CupertinoColors.white.withValues(alpha: 0.9),
             ),
           ),
-          const SizedBox(height: 48),
+          SizedBox(height: 48.h),
           Text(
             headline,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: CupertinoColors.white,
-              fontSize: 26,
+              fontSize: 26.sp,
               fontWeight: FontWeight.bold,
               height: 1.2,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
           Text(
             subtitle,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: CupertinoColors.white.withValues(alpha: 0.7),
-              fontSize: 17,
+              fontSize: 17.sp,
               height: 1.4,
             ),
           ),

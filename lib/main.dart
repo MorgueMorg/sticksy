@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'app.dart';
 import 'core/config/env.dart';
@@ -13,7 +14,12 @@ Future<void> main() async {
       overrides: [
         envLoadResultProvider.overrideWithValue(envResult),
       ],
-      child: StickerForgeApp(envResult: envResult),
+      child: ScreenUtilInit(
+        designSize: const Size(375, 812),
+        minTextAdapt: true,
+        splitScreenMode: true,
+        builder: (_, child) => StickerForgeApp(envResult: envResult),
+      ),
     ),
   );
 }

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:sticksy/core/di/providers.dart';
 import 'package:sticksy/core/widgets/glass_card.dart';
 import 'package:sticksy/core/widgets/stick_btn.dart';
@@ -17,10 +18,10 @@ class SettingsScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Settings')),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.r),
           child: Column(
             children: [
-              Image.asset('assets/icons/set.png', width: 150, height: 150),
+              Image.asset('assets/icons/set.png', width: 150.w, height: 150.h),
               StickBtn(
                 onTap: () {
                   stickWbLnch(context, StickSetUrl.setone);
@@ -30,7 +31,7 @@ class SettingsScreen extends ConsumerWidget {
                   child: GlassCard(child: Text("Privacy Policy")),
                 ),
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 10.h),
               StickBtn(
                 onTap: () {
                   stickWbLnch(context, StickSetUrl.settwo);
@@ -40,7 +41,7 @@ class SettingsScreen extends ConsumerWidget {
                   child: GlassCard(child: Text("Terms of Use")),
                 ),
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 10.h),
               StickBtn(
                 onTap: () {
                   stickWbLnch(context, StickSetUrl.setthree);
@@ -50,7 +51,7 @@ class SettingsScreen extends ConsumerWidget {
                   child: GlassCard(child: Text("Support")),
                 ),
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 10.h),
               StickBtn(
                 onTap: () => _showCacheSheet(context, ref),
                 child: SizedBox(
@@ -86,49 +87,49 @@ void _showCacheClearedDialog(BuildContext context) {
     barrierColor: Colors.black54,
     builder: (context) => Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+      insetPadding: EdgeInsets.symmetric(horizontal: 32.w),
       child: GlassCard(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 28.h),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 64,
-              height: 64,
+              width: 64.r,
+              height: 64.r,
               decoration: BoxDecoration(
                 color: const Color(0xFF2ED47A).withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 CupertinoIcons.checkmark_circle_fill,
-                color: Color(0xFF2ED47A),
-                size: 40,
+                color: const Color(0xFF2ED47A),
+                size: 40.r,
               ),
             ),
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: 20.h),
+            Text(
               'Cache cleared',
               style: TextStyle(
-                fontSize: 22,
+                fontSize: 22.sp,
                 fontWeight: FontWeight.w600,
                 color: CupertinoColors.white,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               'Temporary files have been removed.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 15.sp,
                 color: CupertinoColors.white.withValues(alpha: 0.7),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
             SizedBox(
               width: double.infinity,
               child: CupertinoButton(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                borderRadius: BorderRadius.circular(14),
+                padding: EdgeInsets.symmetric(vertical: 14.h),
+                borderRadius: BorderRadius.circular(14.r),
                 color: const Color(0xFF2C2C2E),
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('OK'),
@@ -149,7 +150,7 @@ class _SettingsSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GlassCard(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(24.r),
       child: FutureBuilder<int>(
         future: ref.read(cacheServiceProvider).getCacheSize(),
         builder: (context, snapshot) {
@@ -158,23 +159,23 @@ class _SettingsSheet extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'Storage & Cache',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 20.sp,
                   fontWeight: FontWeight.w600,
                   color: CupertinoColors.white,
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Text(
                 'Cache size: ${_formatBytes(size)}',
                 style: const TextStyle(color: Color(0xFF8E8E93)),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
               CupertinoButton(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                borderRadius: BorderRadius.circular(14),
+                padding: EdgeInsets.symmetric(vertical: 14.h),
+                borderRadius: BorderRadius.circular(14.r),
                 color: const Color(0xFF2C2C2E),
                 onPressed: () async {
                   await ref.read(cacheServiceProvider).clearCache();
@@ -182,12 +183,12 @@ class _SettingsSheet extends ConsumerWidget {
                   Navigator.of(context).pop();
                   onCleared();
                 },
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(CupertinoIcons.trash),
-                    SizedBox(width: 8),
-                    Text('Clear Cache'),
+                    const Icon(CupertinoIcons.trash),
+                    SizedBox(width: 8.w),
+                    const Text('Clear Cache'),
                   ],
                 ),
               ),
