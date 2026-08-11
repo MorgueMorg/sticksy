@@ -1,9 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../core/config/app_colors.dart';
 import '../../../core/config/onboarding_storage.dart';
 import '../../../core/widgets/gradient_scaffold.dart';
+import '../../../core/widgets/ui_kit.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key, required this.onComplete});
@@ -16,26 +19,29 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
-  int _currentPage = 0;
+  int _page = 0;
 
   static const _pages = [
-    _OnboardingPageData(
-      headline: 'Bring Your Sticker Ideas to Life',
-      subtitle:
-          'Turn fun, surreal, and bold concepts into stunning stickers with ease.',
-      icon: Icons.auto_awesome,
+    _PageData(
+      emoji: '✨',
+      headline: 'Describe it.\nWe draw it.',
+      body: 'Type "a sleepy cat holding a coffee" and get a finished sticker — '
+          'already cut out, already the right size.',
+      colors: [AppColors.pink, AppColors.violet],
     ),
-    _OnboardingPageData(
-      headline: 'Create & Edit in the Workshop',
-      subtitle:
-          'Add images, text, emojis, shapes, and draw. Use AI to remove backgrounds and generate ideas.',
-      icon: Icons.palette_outlined,
+    _PageData(
+      emoji: '🎨',
+      headline: 'Make it yours',
+      body: 'Layer text, emoji, shapes and freehand drawing. Add the classic '
+          'white die-cut border with one slider.',
+      colors: [AppColors.cyan, AppColors.violet],
     ),
-    _OnboardingPageData(
-      headline: 'Share Your Packs',
-      subtitle:
-          'Export sticker packs for WhatsApp, Telegram, or as ZIP. Your creations, your way.',
-      icon: Icons.ios_share,
+    _PageData(
+      emoji: '🚀',
+      headline: 'Send it everywhere',
+      body: 'Organise stickers into packs and export for WhatsApp, Telegram, '
+          'or as a plain ZIP.',
+      colors: [AppColors.lime, AppColors.cyan],
     ),
   ];
 
@@ -46,79 +52,89 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _finish() async {
+    HapticFeedback.mediumImpact();
     await setOnboardingCompleted(true);
     widget.onComplete();
   }
 
+  void _next() {
+    if (_page == _pages.length - 1) {
+      _finish();
+      return;
+    }
+    _pageController.nextPage(
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isLast = _page == _pages.length - 1;
+
     return GradientScaffold(
       body: SafeArea(
         child: Column(
           children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: EdgeInsets.only(right: 12.w, top: 4.h),
+                child: TextButton(
+                  onPressed: _finish,
+                  child: Text(
+                    isLast ? '' : 'Skip',
+                    style: TextStyle(
+                      color: AppColors.textTertiary,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
-                onPageChanged: (index) => setState(() => _currentPage = index),
+                onPageChanged: (index) => setState(() => _page = index),
                 itemCount: _pages.length,
-                itemBuilder: (context, index) {
-                  final page = _pages[index];
-                  return _OnboardingPage(
-                    headline: page.headline,
-                    subtitle: page.subtitle,
-                    icon: page.icon,
-                  );
-                },
+                itemBuilder: (context, index) => _Page(data: _pages[index]),
               ),
             ),
             Padding(
-              padding: EdgeInsets.fromLTRB(24.w, 16.h, 24.w, 32.h),
+              padding: EdgeInsets.fromLTRB(24.w, 8.h, 24.w, 28.h),
               child: Column(
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      _pages.length,
-                      (index) => AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
+                    children: List.generate(_pages.length, (index) {
+                      final active = _page == index;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 240),
+                        curve: Curves.easeOut,
                         margin: EdgeInsets.symmetric(horizontal: 4.w),
-                        width: _currentPage == index ? 24.w : 8.w,
+                        width: active ? 28.w : 8.w,
                         height: 8.h,
                         decoration: BoxDecoration(
-                          color: _currentPage == index
-                              ? CupertinoColors.white
-                              : CupertinoColors.white.withValues(alpha: 0.3),
+                          gradient: active
+                              ? LinearGradient(colors: _pages[index].colors)
+                              : null,
+                          color: active
+                              ? null
+                              : AppColors.textTertiary.withValues(alpha: 0.35),
                           borderRadius: BorderRadius.circular(4.r),
                         ),
-                      ),
-                    ),
+                      );
+                    }),
                   ),
-                  SizedBox(height: 24.h),
-                  SizedBox(
-                    width: double.infinity,
-                    child: CupertinoButton(
-                      padding: EdgeInsets.symmetric(vertical: 16.h),
-                      borderRadius: BorderRadius.circular(14.r),
-                      color: const Color(0xFF2C2C2E),
-                      onPressed: _currentPage == _pages.length - 1
-                          ? _finish
-                          : () {
-                              _pageController.nextPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOutCubic,
-                              );
-                            },
-                      child: Text(
-                        _currentPage == _pages.length - 1
-                            ? 'Get Started'
-                            : 'Continue',
-                        style: TextStyle(
-                          color: CupertinoColors.white,
-                          fontSize: 17.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                  SizedBox(height: 26.h),
+                  GradientButton(
+                    label: isLast ? 'Start creating' : 'Next',
+                    icon: isLast
+                        ? CupertinoIcons.sparkles
+                        : CupertinoIcons.arrow_right,
+                    colors: _pages[_page].colors,
+                    onPressed: _next,
                   ),
                 ],
               ),
@@ -130,28 +146,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-class _OnboardingPageData {
-  const _OnboardingPageData({
+class _PageData {
+  const _PageData({
+    required this.emoji,
     required this.headline,
-    required this.subtitle,
-    required this.icon,
+    required this.body,
+    required this.colors,
   });
 
+  final String emoji;
   final String headline;
-  final String subtitle;
-  final IconData icon;
+  final String body;
+  final List<Color> colors;
 }
 
-class _OnboardingPage extends StatelessWidget {
-  const _OnboardingPage({
-    required this.headline,
-    required this.subtitle,
-    required this.icon,
-  });
+class _Page extends StatelessWidget {
+  const _Page({required this.data});
 
-  final String headline;
-  final String subtitle;
-  final IconData icon;
+  final _PageData data;
 
   @override
   Widget build(BuildContext context) {
@@ -160,46 +172,44 @@ class _OnboardingPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(height: 40.h),
           Container(
-            width: 160.w,
-            height: 160.h,
+            width: 150.r,
+            height: 150.r,
             decoration: BoxDecoration(
-              color: CupertinoColors.white.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(80.r),
+              gradient: LinearGradient(colors: data.colors),
+              borderRadius: BorderRadius.circular(46.r),
               boxShadow: [
                 BoxShadow(
-                  color: CupertinoColors.systemIndigo.withValues(alpha: 0.15),
-                  blurRadius: 40.r,
-                  spreadRadius: 0,
+                  color: data.colors.last.withValues(alpha: 0.45),
+                  blurRadius: 50.r,
+                  offset: Offset(0, 18.r),
                 ),
               ],
             ),
-            child: Icon(
-              icon,
-              size: 72.r,
-              color: CupertinoColors.white.withValues(alpha: 0.9),
+            child: Center(
+              child: Text(data.emoji, style: TextStyle(fontSize: 62.sp)),
             ),
           ),
-          SizedBox(height: 48.h),
+          SizedBox(height: 44.h),
           Text(
-            headline,
+            data.headline,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: CupertinoColors.white,
-              fontSize: 26.sp,
-              fontWeight: FontWeight.bold,
-              height: 1.2,
+              color: AppColors.textPrimary,
+              fontSize: 30.sp,
+              fontWeight: FontWeight.w900,
+              height: 1.15,
+              letterSpacing: -1,
             ),
           ),
           SizedBox(height: 16.h),
           Text(
-            subtitle,
+            data.body,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: CupertinoColors.white.withValues(alpha: 0.7),
-              fontSize: 17.sp,
-              height: 1.4,
+              color: AppColors.textSecondary,
+              fontSize: 15.sp,
+              height: 1.5,
             ),
           ),
         ],

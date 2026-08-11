@@ -1,209 +1,338 @@
-import 'dart:math' as math;
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:sticksy/core/di/providers.dart';
-import 'package:sticksy/core/widgets/glass_card.dart';
-import 'package:sticksy/core/widgets/stick_btn.dart';
-import 'package:sticksy/features/settings/domain/settings_logic.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../core/config/app_colors.dart';
+import '../../../core/di/providers.dart';
+import '../../../core/utils/formatting.dart';
+import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/gradient_scaffold.dart';
+import '../../../core/widgets/ui_kit.dart';
+import '../domain/settings_logic.dart';
+import 'ai_settings_sheet.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.all(16.r),
-          child: Column(
+    final aiSettings = ref.watch(aiSettingsProvider);
+
+    return GradientScaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(CupertinoIcons.back),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text('Settings'),
+      ),
+      body: ListView(
+        padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 40.h),
+        children: [
+          const SectionLabel('Artificial intelligence'),
+          GlassCard(
+            tint: AppColors.success,
+            padding: EdgeInsets.all(18.r),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 42.r,
+                      height: 42.r,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.pink, AppColors.violet],
+                        ),
+                        borderRadius: BorderRadius.circular(14.r),
+                      ),
+                      child: Icon(
+                        CupertinoIcons.wand_stars,
+                        color: Colors.white,
+                        size: 22.r,
+                      ),
+                    ),
+                    SizedBox(width: 14.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            aiSettings.isFreeTier
+                                ? 'Free mode'
+                                : aiSettings.provider.toString(),
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: 3.h),
+                          Text(
+                            aiSettings.isFreeTier
+                                ? 'Works with no key · tap to upgrade quality'
+                                : aiSettings.resolvedImageModel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (aiSettings.isConfigured)
+                      Icon(
+                        CupertinoIcons.checkmark_seal_fill,
+                        color: AppColors.success,
+                        size: 22.r,
+                      ),
+                  ],
+                ),
+                SizedBox(height: 16.h),
+                GradientButton(
+                  label: aiSettings.isFreeTier
+                      ? 'Change provider'
+                      : 'Manage connection',
+                  icon: CupertinoIcons.link,
+                  compact: true,
+                  onPressed: () => showAppSheet(
+                    context,
+                    builder: (_) => const AiSettingsSheet(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 26.h),
+
+          const SectionLabel('Storage'),
+          const _StorageCard(),
+          SizedBox(height: 26.h),
+
+          const SectionLabel('About'),
+          _LinkTile(
+            icon: CupertinoIcons.doc_text,
+            label: 'Privacy Policy',
+            onTap: () => openExternalUrl(context, StickSetUrl.privacyPolicy),
+          ),
+          _LinkTile(
+            icon: CupertinoIcons.checkmark_shield,
+            label: 'Terms of Use',
+            onTap: () => openExternalUrl(context, StickSetUrl.termsOfUse),
+          ),
+          _LinkTile(
+            icon: CupertinoIcons.chat_bubble_2,
+            label: 'Contact support',
+            onTap: () => openExternalUrl(context, StickSetUrl.support),
+          ),
+          SizedBox(height: 32.h),
+          Center(
+            child: Column(
+              children: [
+                ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: AppColors.brandGradient,
+                  ).createShader(bounds),
+                  child: Text(
+                    'Sticksy',
+                    style: TextStyle(
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: -0.6,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  'Made for people who over-communicate',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StorageCard extends ConsumerStatefulWidget {
+  const _StorageCard();
+
+  @override
+  ConsumerState<_StorageCard> createState() => _StorageCardState();
+}
+
+class _StorageCardState extends ConsumerState<_StorageCard> {
+  int? _cacheBytes;
+  int? _libraryBytes;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    final cache = await ref.read(cacheServiceProvider).getCacheSize();
+    final library = await ref.read(storageServiceProvider).usedBytes();
+    if (!mounted) return;
+    setState(() {
+      _cacheBytes = cache;
+      _libraryBytes = library;
+    });
+  }
+
+  Future<void> _clear() async {
+    setState(() => _busy = true);
+    await ref.read(cacheServiceProvider).clearCache();
+    await _refresh();
+    if (!mounted) return;
+    setState(() => _busy = false);
+    showAppSnack(context, 'Temporary files cleared');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: EdgeInsets.all(18.r),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
             children: [
-              Image.asset('assets/icons/set.png', width: 150.w, height: 150.h),
-              StickBtn(
-                onTap: () {
-                  stickWbLnch(context, StickSetUrl.setone);
-                },
-                child: SizedBox(
-                  width: double.infinity,
-                  child: GlassCard(child: Text("Privacy Policy")),
+              Expanded(
+                child: _Metric(
+                  label: 'Your stickers',
+                  value: _libraryBytes == null
+                      ? '—'
+                      : formatBytes(_libraryBytes!),
+                  color: AppColors.cyan,
                 ),
               ),
-              SizedBox(height: 10.h),
-              StickBtn(
-                onTap: () {
-                  stickWbLnch(context, StickSetUrl.settwo);
-                },
-                child: SizedBox(
-                  width: double.infinity,
-                  child: GlassCard(child: Text("Terms of Use")),
+              Expanded(
+                child: _Metric(
+                  label: 'Temporary files',
+                  value:
+                      _cacheBytes == null ? '—' : formatBytes(_cacheBytes!),
+                  color: AppColors.orange,
                 ),
               ),
-              SizedBox(height: 10.h),
-              StickBtn(
-                onTap: () {
-                  stickWbLnch(context, StickSetUrl.setthree);
-                },
-                child: SizedBox(
-                  width: double.infinity,
-                  child: GlassCard(child: Text("Support")),
+            ],
+          ),
+          SizedBox(height: 16.h),
+          SoftButton(
+            label: _busy ? 'Clearing…' : 'Clear temporary files',
+            icon: CupertinoIcons.trash,
+            onPressed: _busy ? null : _clear,
+          ),
+          SizedBox(height: 10.h),
+          Text(
+            'Only exports and scratch files are removed. Your saved stickers '
+            'stay untouched.',
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: AppColors.textTertiary,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Metric extends StatelessWidget {
+  const _Metric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 20.sp,
+            fontWeight: FontWeight.w800,
+            color: color,
+          ),
+        ),
+        SizedBox(height: 3.h),
+        Text(
+          label,
+          style: TextStyle(fontSize: 11.sp, color: AppColors.textTertiary),
+        ),
+      ],
+    );
+  }
+}
+
+class _LinkTile extends StatelessWidget {
+  const _LinkTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 10.h),
+      child: PressFx(
+        onTap: onTap,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(18.r),
+            border: Border.all(color: AppColors.stroke),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 19.r, color: AppColors.textSecondary),
+              SizedBox(width: 14.w),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
-              SizedBox(height: 10.h),
-              StickBtn(
-                onTap: () => _showCacheSheet(context, ref),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: GlassCard(child: Text("Clear Cache")),
-                ),
-              ),
-              Spacer(),
-              Text(
-                "Made with ❤️",
-                style: TextStyle(color: CupertinoColors.white),
+              Icon(
+                CupertinoIcons.chevron_right,
+                size: 15.r,
+                color: AppColors.textTertiary,
               ),
             ],
           ),
         ),
       ),
     );
-  }
-}
-
-void _showCacheSheet(BuildContext context, WidgetRef ref) {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.transparent,
-    builder: (context) =>
-        _SettingsSheet(onCleared: () => _showCacheClearedDialog(context)),
-  );
-}
-
-void _showCacheClearedDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    barrierColor: Colors.black54,
-    builder: (context) => Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: EdgeInsets.symmetric(horizontal: 32.w),
-      child: GlassCard(
-        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 28.h),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64.r,
-              height: 64.r,
-              decoration: BoxDecoration(
-                color: const Color(0xFF2ED47A).withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                CupertinoIcons.checkmark_circle_fill,
-                color: const Color(0xFF2ED47A),
-                size: 40.r,
-              ),
-            ),
-            SizedBox(height: 20.h),
-            Text(
-              'Cache cleared',
-              style: TextStyle(
-                fontSize: 22.sp,
-                fontWeight: FontWeight.w600,
-                color: CupertinoColors.white,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              'Temporary files have been removed.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 15.sp,
-                color: CupertinoColors.white.withValues(alpha: 0.7),
-              ),
-            ),
-            SizedBox(height: 24.h),
-            SizedBox(
-              width: double.infinity,
-              child: CupertinoButton(
-                padding: EdgeInsets.symmetric(vertical: 14.h),
-                borderRadius: BorderRadius.circular(14.r),
-                color: const Color(0xFF2C2C2E),
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-class _SettingsSheet extends ConsumerWidget {
-  const _SettingsSheet({required this.onCleared});
-
-  final VoidCallback onCleared;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return GlassCard(
-      padding: EdgeInsets.all(24.r),
-      child: FutureBuilder<int>(
-        future: ref.read(cacheServiceProvider).getCacheSize(),
-        builder: (context, snapshot) {
-          final size = snapshot.data ?? 0;
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Storage & Cache',
-                style: TextStyle(
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.w600,
-                  color: CupertinoColors.white,
-                ),
-              ),
-              SizedBox(height: 12.h),
-              Text(
-                'Cache size: ${_formatBytes(size)}',
-                style: const TextStyle(color: Color(0xFF8E8E93)),
-              ),
-              SizedBox(height: 16.h),
-              CupertinoButton(
-                padding: EdgeInsets.symmetric(vertical: 14.h),
-                borderRadius: BorderRadius.circular(14.r),
-                color: const Color(0xFF2C2C2E),
-                onPressed: () async {
-                  await ref.read(cacheServiceProvider).clearCache();
-                  if (!context.mounted) return;
-                  Navigator.of(context).pop();
-                  onCleared();
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(CupertinoIcons.trash),
-                    SizedBox(width: 8.w),
-                    const Text('Clear Cache'),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  String _formatBytes(int bytes) {
-    if (bytes <= 0) return '0 B';
-    const suffixes = ['B', 'KB', 'MB', 'GB'];
-    final i = (bytes == 0) ? 0 : (math.log(bytes) / math.log(1024)).floor();
-    final size = (bytes / math.pow(1024, i)).toStringAsFixed(1);
-    return '$size ${suffixes[i]}';
   }
 }

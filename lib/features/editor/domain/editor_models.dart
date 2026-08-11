@@ -205,6 +205,8 @@ class TextLayer extends StickerLayer {
     required this.shadow,
     required super.transform,
     required super.opacity,
+    this.bold = true,
+    this.italic = false,
   });
 
   final String text;
@@ -213,6 +215,8 @@ class TextLayer extends StickerLayer {
   final Color strokeColor;
   final double strokeWidth;
   final double shadow;
+  final bool bold;
+  final bool italic;
 
   @override
   StickerLayerType get type => StickerLayerType.text;
@@ -226,6 +230,8 @@ class TextLayer extends StickerLayer {
     double? shadow,
     LayerTransform? transform,
     double? opacity,
+    bool? bold,
+    bool? italic,
   }) {
     return TextLayer(
       id: id,
@@ -237,6 +243,8 @@ class TextLayer extends StickerLayer {
       shadow: shadow ?? this.shadow,
       transform: transform ?? this.transform,
       opacity: opacity ?? this.opacity,
+      bold: bold ?? this.bold,
+      italic: italic ?? this.italic,
     );
   }
 
@@ -250,6 +258,8 @@ class TextLayer extends StickerLayer {
         'strokeColor': strokeColor.toARGB32(),
         'strokeWidth': strokeWidth,
         'shadow': shadow,
+        'bold': bold,
+        'italic': italic,
         'transform': transform.toJson(),
         'opacity': opacity,
       };
@@ -263,6 +273,8 @@ class TextLayer extends StickerLayer {
       strokeColor: Color(json['strokeColor'] as int? ?? Colors.black.toARGB32()),
       strokeWidth: (json['strokeWidth'] as num?)?.toDouble() ?? 0,
       shadow: (json['shadow'] as num?)?.toDouble() ?? 0,
+      bold: json['bold'] as bool? ?? true,
+      italic: json['italic'] as bool? ?? false,
       transform: LayerTransform.fromJson(
         Map<String, dynamic>.from(json['transform'] as Map),
       ),
@@ -517,4 +529,37 @@ class StickerSizePreset {
   final String label;
   final double width;
   final double height;
+}
+
+/// Die-cut border applied to the flattened sticker at save/export time.
+///
+/// It can't be a normal layer: the border has to hug the *combined* silhouette
+/// of everything on the canvas, which only exists once the layers are merged.
+class StickerOutline {
+  const StickerOutline({this.width = 0, this.color = const Color(0xFFFFFFFF)});
+
+  /// In exported pixels. 0 disables the border.
+  final double width;
+  final Color color;
+
+  bool get enabled => width > 0;
+
+  StickerOutline copyWith({double? width, Color? color}) {
+    return StickerOutline(
+      width: width ?? this.width,
+      color: color ?? this.color,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'width': width,
+        'color': color.toARGB32(),
+      };
+
+  factory StickerOutline.fromJson(Map<String, dynamic> json) {
+    return StickerOutline(
+      width: (json['width'] as num?)?.toDouble() ?? 0,
+      color: Color(json['color'] as int? ?? 0xFFFFFFFF),
+    );
+  }
 }

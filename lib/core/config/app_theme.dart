@@ -1,113 +1,207 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-/// Cupertino-inspired dark theme (3D Object Builder style).
-/// Charcoal background, subtle depth, rounded corners, clean typography.
+import 'app_colors.dart';
+
+/// Dark, saturated, playful. Rounded geometry everywhere, no Material ripple
+/// grey, and a single accent family so the app feels intentional.
 class AppTheme {
-  static const Color _background = Color(0xFF0C0D14);
-  static const Color _surface = Color(0xFF1C1C1E);
-  static const Color _surfaceVariant = Color(0xFF2C2C2E);
-  static const Color _primary = Color(0xFF0A84FF);
+  const AppTheme._();
 
   static ThemeData get darkTheme {
     const colorScheme = ColorScheme.dark(
-      surface: _surface,
-      onSurface: CupertinoColors.white,
-      onSurfaceVariant: Color(0xFF8E8E93),
-      primary: _primary,
-      onPrimary: CupertinoColors.white,
-      secondary: Color(0xFF5E5CE6),
-      outline: Color(0xFF48484A),
+      surface: AppColors.surface,
+      onSurface: AppColors.textPrimary,
+      surfaceContainerHighest: AppColors.surfaceHigh,
+      onSurfaceVariant: AppColors.textSecondary,
+      primary: AppColors.violet,
+      onPrimary: Colors.white,
+      secondary: AppColors.pink,
+      onSecondary: Colors.white,
+      tertiary: AppColors.cyan,
+      error: AppColors.danger,
+      onError: Colors.white,
+      outline: AppColors.stroke,
     );
 
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: _background,
+      scaffoldBackgroundColor: AppColors.bg,
+      splashFactory: InkSparkle.splashFactory,
       cupertinoOverrideTheme: const CupertinoThemeData(
         brightness: Brightness.dark,
-        primaryColor: _primary,
-        scaffoldBackgroundColor: _background,
-        barBackgroundColor: _surface,
+        primaryColor: AppColors.violet,
+        scaffoldBackgroundColor: AppColors.bg,
+        barBackgroundColor: AppColors.surface,
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        titleTextStyle: TextStyle(
-          color: CupertinoColors.white,
-          fontSize: 17,
-          fontWeight: FontWeight.w600,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarBrightness: Brightness.dark,
+          statusBarIconBrightness: Brightness.light,
+          statusBarColor: Colors.transparent,
         ),
-        iconTheme: IconThemeData(color: CupertinoColors.white),
+        titleTextStyle: TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.2,
+        ),
+        iconTheme: IconThemeData(color: AppColors.textPrimary),
       ),
       cardTheme: CardThemeData(
-        color: _surfaceVariant.withValues(alpha: 0.6),
+        color: AppColors.surface,
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: AppColors.stroke,
+        thickness: 1,
+        space: 1,
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: _surfaceVariant,
-        labelStyle: const TextStyle(color: CupertinoColors.white),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+        backgroundColor: AppColors.surfaceHigh,
+        selectedColor: AppColors.violet,
+        side: const BorderSide(color: AppColors.stroke),
+        labelStyle: const TextStyle(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w600,
         ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+      sliderTheme: SliderThemeData(
+        activeTrackColor: AppColors.violet,
+        inactiveTrackColor: AppColors.surfaceHigh,
+        thumbColor: Colors.white,
+        overlayColor: AppColors.violet.withValues(alpha: 0.16),
+        trackHeight: 4,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: _surfaceVariant,
+        fillColor: AppColors.surfaceHigh,
+        hintStyle: const TextStyle(color: AppColors.textTertiary),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.stroke),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.violet, width: 1.6),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.surfaceHigh,
+        contentTextStyle: const TextStyle(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: _surfaceVariant,
-          foregroundColor: CupertinoColors.white,
+          backgroundColor: AppColors.surfaceHigh,
+          foregroundColor: AppColors.textPrimary,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
           ),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: _surfaceVariant,
-          foregroundColor: CupertinoColors.white,
+          backgroundColor: AppColors.violet,
+          foregroundColor: Colors.white,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.violet,
+          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          side: const WidgetStatePropertyAll(
+            BorderSide(color: AppColors.stroke),
+          ),
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) return AppColors.violet;
+            return Colors.transparent;
+          }),
+          foregroundColor: const WidgetStatePropertyAll(
+            AppColors.textPrimary,
           ),
         ),
       ),
       textTheme: const TextTheme(
+        displaySmall: TextStyle(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w800,
+          fontSize: 30,
+          letterSpacing: -0.8,
+        ),
         headlineSmall: TextStyle(
-          color: CupertinoColors.white,
-          fontWeight: FontWeight.bold,
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w800,
           fontSize: 22,
+          letterSpacing: -0.4,
         ),
         titleLarge: TextStyle(
-          color: CupertinoColors.white,
-          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w700,
           fontSize: 17,
         ),
         titleMedium: TextStyle(
-          color: CupertinoColors.white,
-          fontWeight: FontWeight.w500,
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w600,
           fontSize: 15,
         ),
-        bodyMedium: TextStyle(
-          color: Color(0xFF8E8E93),
-          fontSize: 15,
+        bodyMedium: TextStyle(color: AppColors.textSecondary, fontSize: 15),
+        bodySmall: TextStyle(color: AppColors.textTertiary, fontSize: 13),
+        labelLarge: TextStyle(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w700,
+          fontSize: 14,
         ),
+      ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
       ),
     );
   }

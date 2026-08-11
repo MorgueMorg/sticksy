@@ -1,20 +1,22 @@
 import 'dart:io';
-import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:sticksy/features/settings/presentation/settings.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../core/config/app_colors.dart';
 import '../../../core/di/providers.dart';
+import '../../../core/utils/formatting.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/gradient_scaffold.dart';
+import '../../../core/widgets/ui_kit.dart';
 import '../domain/models.dart';
 
 class PackListScreen extends ConsumerWidget {
@@ -22,287 +24,165 @@ class PackListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final packsAsync = ref.watch(packSummariesProvider);
+    final packsAsync = ref.watch(filteredPackSummariesProvider);
+    final query = ref.watch(packSearchQueryProvider);
+    final hasAnyPack =
+        ref.watch(packSummariesProvider).value?.isNotEmpty ?? false;
+
     return GradientScaffold(
       appBar: AppBar(
-        title: const Text('Sticksy'),
+        titleSpacing: 20,
+        centerTitle: false,
+        title: const _Wordmark(),
         actions: [
-          CupertinoButton(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-            onPressed: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (context) => SettingsScreen()));
-            },
-            child: const Icon(
-              CupertinoIcons.settings,
-              color: CupertinoColors.white,
-            ),
+          IconPill(
+            icon: CupertinoIcons.settings,
+            tooltip: 'Settings',
+            onPressed: () => context.push('/settings'),
           ),
+          SizedBox(width: 20.w),
         ],
       ),
       floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: 24.h, right: 20.w),
-        child: FloatingActionButton.extended(
-          onPressed: () => _showCreatePackSheet(context, ref),
-          backgroundColor: const Color(0xFF2C2C2E),
-          elevation: 0,
-          icon: const Icon(CupertinoIcons.add, color: CupertinoColors.white),
-          label: Text(
-            'New Pack',
-            style: TextStyle(
-              color: CupertinoColors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 15.sp,
-            ),
-          ),
+        padding: EdgeInsets.only(bottom: 12.h, right: 4.w),
+        child: GradientButton(
+          label: 'New pack',
+          icon: CupertinoIcons.add,
+          expand: false,
+          onPressed: () => _createPack(context, ref),
         ),
       ),
-      body: packsAsync.when(
-        data: (packs) => packs.isEmpty
-            ? _EmptyState(onCreate: () => _showCreatePackSheet(context, ref))
-            : _PackList(
-                packs: packs,
-                onReorder: (ids) =>
-                    ref.read(packRepositoryProvider).reorderPacks(ids),
-              ),
-        loading: () => const Center(
-          child: CupertinoActivityIndicator(color: CupertinoColors.white),
-        ),
-        error: (error, _) => Center(
-          child: Text(
-            'Failed to load packs: $error',
-            style: const TextStyle(color: Color(0xFF8E8E93)),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showCreatePackSheet(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: _CreatePackSheetContent(
-          onCreate: (name, coverPath) => _createPackWithCover(context, ref, name, coverPath),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _createPackWithCover(
-    BuildContext context,
-    WidgetRef ref,
-    String name,
-    String? coverPath,
-  ) async {
-    final packId = await ref.read(packRepositoryProvider).createPack(name);
-    if (coverPath != null && context.mounted) {
-      final stickerId = await createCoverStickerFromFile(ref, packId, coverPath);
-      if (stickerId != null) {
-        await ref.read(packRepositoryProvider).setCoverSticker(packId, stickerId);
-      }
-    }
-    if (context.mounted) Navigator.of(context).pop();
-  }
-}
-
-Future<String?> createCoverStickerFromFile(
-  WidgetRef ref,
-  String packId,
-  String filePath,
-) async {
-  try {
-    final bytes = await File(filePath).readAsBytes();
-    final decoded = img.decodeImage(bytes);
-    if (decoded == null) return null;
-    final pngBytes = Uint8List.fromList(img.encodePng(decoded));
-    const uuid = Uuid();
-    final stickerId = uuid.v4();
-    final storage = ref.read(storageServiceProvider);
-    final filePathSaved = await storage.saveStickerBytes(
-      packId: packId,
-      stickerId: stickerId,
-      extension: 'png',
-      bytes: pngBytes,
-    );
-    await ref.read(stickerRepositoryProvider).createSticker(
-      id: stickerId,
-      packId: packId,
-      name: 'Cover',
-      filePath: filePathSaved,
-      width: decoded.width,
-      height: decoded.height,
-      format: StickerFormat.png,
-      fileSize: pngBytes.length,
-    );
-    return stickerId;
-  } catch (_) {
-    return null;
-  }
-}
-
-class _CreatePackSheetContent extends StatefulWidget {
-  const _CreatePackSheetContent({
-    required this.onCreate,
-  });
-
-  final void Function(String name, String? coverPath) onCreate;
-
-  @override
-  State<_CreatePackSheetContent> createState() => _CreatePackSheetContentState();
-}
-
-class _CreatePackSheetContentState extends State<_CreatePackSheetContent> {
-  final _nameController = TextEditingController();
-  String? _coverPath;
-  final _picker = ImagePicker();
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickCover(ImageSource source) async {
-    final file = await _picker.pickImage(source: source);
-    if (file != null && mounted) setState(() => _coverPath = file.path);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassCard(
-      padding: EdgeInsets.all(24.r),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Column(
         children: [
-          Text(
-            'Create Sticker Pack',
-            style: TextStyle(
-              fontSize: 20.sp,
-              fontWeight: FontWeight.w600,
-              color: CupertinoColors.white,
-            ),
-          ),
-          SizedBox(height: 16.h),
-          CupertinoTextField(
-            controller: _nameController,
-            placeholder: 'Pack name',
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2C2C2E),
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            style: const TextStyle(color: CupertinoColors.white),
-          ),
-          SizedBox(height: 20.h),
-          Text(
-            'Cover photo (optional)',
-            style: TextStyle(
-              color: const Color(0xFF8E8E93),
-              fontSize: 14.sp,
-            ),
-          ),
-          SizedBox(height: 8.h),
-          if (_coverPath != null) ...[
-            Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12.r),
-                  child: Image.file(
-                    File(_coverPath!),
-                    width: 72.w,
-                    height: 72.h,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () => setState(() => _coverPath = null),
-                    child: const Text('Remove', style: TextStyle(color: CupertinoColors.destructiveRed)),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-          ],
-          Row(
-            children: [
-              CupertinoButton(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-                color: const Color(0xFF2C2C2E),
-                borderRadius: BorderRadius.circular(12.r),
-                onPressed: () => _pickCover(ImageSource.gallery),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(CupertinoIcons.photo, size: 20.r),
-                    SizedBox(width: 8.w),
-                    const Text('Gallery'),
-                  ],
-                ),
+          if (hasAnyPack)
+            Padding(
+              padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 12.h),
+              child: _SearchField(
+                value: query,
+                onChanged: (value) =>
+                    ref.read(packSearchQueryProvider.notifier).state = value,
               ),
-              SizedBox(width: 8.w),
-              CupertinoButton(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-                color: const Color(0xFF2C2C2E),
-                borderRadius: BorderRadius.circular(12.r),
-                onPressed: () => _pickCover(ImageSource.camera),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(CupertinoIcons.camera, size: 20.r),
-                    SizedBox(width: 8.w),
-                    const Text('Camera'),
-                  ],
-                ),
+            ),
+          Expanded(
+            child: packsAsync.when(
+              data: (packs) {
+                if (packs.isEmpty && query.isNotEmpty) {
+                  return EmptyState(
+                    icon: CupertinoIcons.search,
+                    title: 'No matches',
+                    message: 'No pack called "$query".',
+                    colors: const [AppColors.cyan, AppColors.violet],
+                  );
+                }
+                if (packs.isEmpty) {
+                  return EmptyState(
+                    icon: CupertinoIcons.sparkles,
+                    title: 'Make your first pack',
+                    message:
+                        'Packs hold your stickers. Create one, then generate '
+                        'or import stickers into it.',
+                    actionLabel: 'Create a pack',
+                    onAction: () => _createPack(context, ref),
+                  );
+                }
+                return _PackList(packs: packs);
+              },
+              loading: () =>
+                  const Center(child: CupertinoActivityIndicator(radius: 14)),
+              error: (error, _) => EmptyState(
+                icon: CupertinoIcons.exclamationmark_triangle,
+                title: 'Could not load your packs',
+                message: '$error',
+                colors: const [AppColors.orange, AppColors.danger],
               ),
-            ],
-          ),
-          SizedBox(height: 20.h),
-          CupertinoButton(
-            padding: EdgeInsets.symmetric(vertical: 14.h),
-            borderRadius: BorderRadius.circular(14.r),
-            color: const Color(0xFF2C2C2E),
-            onPressed: () async {
-              final name = _nameController.text.trim();
-              if (name.isEmpty) return;
-              widget.onCreate(name, _coverPath);
-            },
-            child: const Text('Create'),
+            ),
           ),
         ],
       ),
     );
   }
+
+  Future<void> _createPack(BuildContext context, WidgetRef ref) async {
+    final name = await promptForText(
+      context,
+      title: 'New sticker pack',
+      hint: 'Cat reactions',
+      confirmLabel: 'Create pack',
+      maxLength: 40,
+    );
+    if (name == null) return;
+    try {
+      final packId = await ref.read(packRepositoryProvider).createPack(name);
+      if (!context.mounted) return;
+      HapticFeedback.mediumImpact();
+      context.go('/pack/$packId');
+    } catch (error) {
+      if (context.mounted) {
+        showAppSnack(context, 'Could not create the pack.', isError: true);
+      }
+    }
+  }
 }
 
-class _PackList extends StatefulWidget {
-  const _PackList({required this.packs, required this.onReorder});
+class _Wordmark extends StatelessWidget {
+  const _Wordmark();
+
+  @override
+  Widget build(BuildContext context) {
+    return ShaderMask(
+      shaderCallback: (bounds) => const LinearGradient(
+        colors: AppColors.brandGradient,
+      ).createShader(bounds),
+      child: Text(
+        'Sticksy',
+        style: TextStyle(
+          fontSize: 28.sp,
+          fontWeight: FontWeight.w900,
+          letterSpacing: -1,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+}
+
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.value, required this.onChanged});
+
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      onChanged: onChanged,
+      textInputAction: TextInputAction.search,
+      style: TextStyle(fontSize: 15.sp, color: AppColors.textPrimary),
+      decoration: InputDecoration(
+        isDense: true,
+        hintText: 'Search packs',
+        prefixIcon: Icon(
+          CupertinoIcons.search,
+          size: 18.r,
+          color: AppColors.textTertiary,
+        ),
+        prefixIconConstraints: BoxConstraints(minWidth: 42.w),
+      ),
+    );
+  }
+}
+
+class _PackList extends ConsumerStatefulWidget {
+  const _PackList({required this.packs});
 
   final List<PackSummary> packs;
-  final ValueChanged<List<String>> onReorder;
 
   @override
-  State<_PackList> createState() => _PackListState();
+  ConsumerState<_PackList> createState() => _PackListState();
 }
 
-class _PackListState extends State<_PackList> {
-  late List<PackSummary> _packs;
-
-  @override
-  void initState() {
-    super.initState();
-    _packs = [...widget.packs];
-  }
+class _PackListState extends ConsumerState<_PackList> {
+  late List<PackSummary> _packs = [...widget.packs];
 
   @override
   void didUpdateWidget(covariant _PackList oldWidget) {
@@ -313,24 +193,33 @@ class _PackListState extends State<_PackList> {
   @override
   Widget build(BuildContext context) {
     return ReorderableListView.builder(
-      padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 100.h),
+      padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 110.h),
       itemCount: _packs.length,
+      buildDefaultDragHandles: false,
+      proxyDecorator: (child, index, animation) => Transform.scale(
+        scale: 1.03,
+        child: Opacity(opacity: 0.92, child: child),
+      ),
       onReorder: (oldIndex, newIndex) {
         setState(() {
-          if (newIndex > oldIndex) {
-            newIndex -= 1;
-          }
+          if (newIndex > oldIndex) newIndex -= 1;
           final item = _packs.removeAt(oldIndex);
           _packs.insert(newIndex, item);
         });
-        widget.onReorder(_packs.map((pack) => pack.id).toList());
+        HapticFeedback.selectionClick();
+        ref
+            .read(packRepositoryProvider)
+            .reorderPacks(_packs.map((pack) => pack.id).toList());
       },
       itemBuilder: (context, index) {
         final pack = _packs[index];
         return Padding(
           key: ValueKey(pack.id),
-          padding: EdgeInsets.only(bottom: 12.h),
-          child: _PackCard(pack: pack),
+          padding: EdgeInsets.only(bottom: 14.h),
+          child: ReorderableDelayedDragStartListener(
+            index: index,
+            child: _PackCard(pack: pack),
+          ),
         );
       },
     );
@@ -344,390 +233,270 @@ class _PackCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final coverId = pack.coverStickerId;
-    return GlassCard(
-      padding: EdgeInsets.all(16.r),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => context.go('/pack/${pack.id}'),
-          borderRadius: BorderRadius.circular(20.r),
-          child: Row(
-            children: [
-              _PackCover(coverId: coverId),
-              SizedBox(width: 16.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      pack.name,
-                      style: TextStyle(
-                        color: CupertinoColors.white,
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: 6.h),
-                    Text(
-                      '${pack.stickerCount} stickers • ${_formatBytes(pack.totalSize)}',
-                      style: TextStyle(
-                        color: const Color(0xFF8E8E93),
-                        fontSize: 14.sp,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              CupertinoButton(
-                padding: EdgeInsets.all(8.r),
-                onPressed: () => _showPackActions(context, ref, pack),
-                child: const Icon(
-                  CupertinoIcons.ellipsis,
-                  color: CupertinoColors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+    final gradient = AppColors.gradientForSeed(pack.id);
 
-  void _showPackActions(BuildContext context, WidgetRef ref, PackSummary pack) {
-    final controller = TextEditingController(text: pack.name);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Consumer(
-          builder: (context, ref, _) {
-            return GlassCard(
-              padding: EdgeInsets.all(24.r),
-              child: _PackActionsSheetContent(
-                pack: pack,
-                nameController: controller,
-              ),
-            );
-          },
-        ),
-      ),
-    ).then((_) => controller.dispose());
-  }
-}
-
-class _PackActionsSheetContent extends ConsumerWidget {
-  const _PackActionsSheetContent({
-    required this.pack,
-    required this.nameController,
-  });
-
-  final PackSummary pack;
-  final TextEditingController nameController;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final stickersAsync = ref.watch(stickersForPackProvider(pack.id));
-    final picker = ImagePicker();
-    return SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Pack Actions',
-            style: TextStyle(
-              fontSize: 20.sp,
-              fontWeight: FontWeight.w600,
-              color: CupertinoColors.white,
-            ),
-          ),
-          SizedBox(height: 16.h),
-          CupertinoTextField(
-            controller: nameController,
-            placeholder: 'Pack name',
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2C2C2E),
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            style: const TextStyle(color: CupertinoColors.white),
-          ),
-          SizedBox(height: 12.h),
-          CupertinoButton(
-            padding: EdgeInsets.symmetric(vertical: 14.h),
-            borderRadius: BorderRadius.circular(14.r),
-            color: const Color(0xFF2C2C2E),
-            onPressed: () async {
-              final name = nameController.text.trim();
-              if (name.isEmpty) return;
-              await ref.read(packRepositoryProvider).renamePack(pack.id, name);
-              if (context.mounted) Navigator.of(context).pop();
-            },
-            child: const Text('Save Name'),
-          ),
-          SizedBox(height: 20.h),
-          Text(
-            'Cover photo',
-            style: TextStyle(
-              fontSize: 15.sp,
-              fontWeight: FontWeight.w600,
-              color: CupertinoColors.white,
-            ),
-          ),
-          SizedBox(height: 8.h),
-          Row(
-            children: [
-              CupertinoButton(
-                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
-                color: const Color(0xFF2C2C2E),
-                borderRadius: BorderRadius.circular(12.r),
-                onPressed: () async {
-                  final file = await picker.pickImage(source: ImageSource.gallery);
-                  if (file == null || !context.mounted) return;
-                  final stickerId = await createCoverStickerFromFile(ref, pack.id, file.path);
-                  if (stickerId != null && context.mounted) {
-                    await ref.read(packRepositoryProvider).setCoverSticker(pack.id, stickerId);
-                    if (context.mounted) Navigator.of(context).pop();
-                  }
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(CupertinoIcons.photo, size: 20.r),
-                    SizedBox(width: 8.w),
-                    const Text('Gallery'),
-                  ],
-                ),
-              ),
-              SizedBox(width: 8.w),
-              CupertinoButton(
-                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
-                color: const Color(0xFF2C2C2E),
-                borderRadius: BorderRadius.circular(12.r),
-                onPressed: () async {
-                  final file = await picker.pickImage(source: ImageSource.camera);
-                  if (file == null || !context.mounted) return;
-                  final stickerId = await createCoverStickerFromFile(ref, pack.id, file.path);
-                  if (stickerId != null && context.mounted) {
-                    await ref.read(packRepositoryProvider).setCoverSticker(pack.id, stickerId);
-                    if (context.mounted) Navigator.of(context).pop();
-                  }
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(CupertinoIcons.camera, size: 20.r),
-                    SizedBox(width: 8.w),
-                    const Text('Camera'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          stickersAsync.when(
-            data: (stickers) {
-              if (stickers.isEmpty) return const SizedBox.shrink();
-              return Column(
+    return PressFx(
+      onTap: () => context.go('/pack/${pack.id}'),
+      onLongPress: () => _showActions(context, ref),
+      child: GlassCard(
+        padding: EdgeInsets.all(14.r),
+        tint: gradient.first,
+        child: Row(
+          children: [
+            _PackCover(coverId: pack.coverStickerId, gradient: gradient),
+            SizedBox(width: 14.w),
+            Expanded(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Padding(
-                    padding: EdgeInsets.only(top: 4.h),
-                    child: Text(
-                      'Or choose from pack',
-                      style: TextStyle(color: const Color(0xFF8E8E93), fontSize: 13.sp),
+                  Text(
+                    pack.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 17.sp,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
                     ),
                   ),
-                  SizedBox(height: 6.h),
-                  SizedBox(
-                  height: 56.h,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: stickers.length,
-                    separatorBuilder: (_, __) => SizedBox(width: 8.w),
-                    itemBuilder: (context, index) {
-                      final sticker = stickers[index];
-                      final isCover = pack.coverStickerId == sticker.id;
-                      return GestureDetector(
-                        onTap: () async {
-                          await ref.read(packRepositoryProvider).setCoverSticker(pack.id, sticker.id);
-                          if (context.mounted) Navigator.of(context).pop();
-                        },
-                        child: Container(
-                          width: 56.w,
-                          height: 56.h,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10.r),
-                            border: isCover
-                                ? Border.all(color: CupertinoColors.activeBlue, width: 2.r)
-                                : null,
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(10.r),
-                            child: Image.file(
-                              File(sticker.filePath),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+                  SizedBox(height: 8.h),
+                  Wrap(
+                    spacing: 6.w,
+                    runSpacing: 6.h,
+                    children: [
+                      StatChip(
+                        icon: CupertinoIcons.square_grid_2x2,
+                        label: pluralise(pack.stickerCount, 'sticker'),
+                        color: gradient.first,
+                      ),
+                      StatChip(
+                        label: formatBytes(pack.totalSize),
+                        color: AppColors.textTertiary,
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            );
-            },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-          if (pack.coverStickerId != null) ...[
-            SizedBox(height: 8.h),
-            CupertinoButton(
-              padding: EdgeInsets.symmetric(vertical: 10.h),
-              onPressed: () async {
-                await ref.read(packRepositoryProvider).setCoverSticker(pack.id, null);
-                if (context.mounted) Navigator.of(context).pop();
-              },
-              child: const Text('Remove cover', style: TextStyle(color: CupertinoColors.destructiveRed)),
+                  SizedBox(height: 6.h),
+                  Text(
+                    'Updated ${formatRelativeDate(pack.updatedAt)}',
+                    style: TextStyle(
+                      color: AppColors.textTertiary,
+                      fontSize: 11.sp,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconPill(
+              icon: CupertinoIcons.ellipsis,
+              tooltip: 'Pack options',
+              size: 36,
+              onPressed: () => _showActions(context, ref),
             ),
           ],
-          SizedBox(height: 16.h),
-          CupertinoButton(
-            padding: EdgeInsets.symmetric(vertical: 14.h),
-            onPressed: () async {
-              await ref.read(packRepositoryProvider).duplicatePack(pack.id);
-              if (context.mounted) Navigator.of(context).pop();
-            },
-            child: const Text('Duplicate Pack'),
-          ),
-          CupertinoButton(
-            padding: EdgeInsets.symmetric(vertical: 14.h),
-            onPressed: () async {
-              await ref.read(packRepositoryProvider).deletePack(pack.id);
-              if (context.mounted) Navigator.of(context).pop();
-            },
-            child: const Text(
-              'Delete Pack',
-              style: TextStyle(color: CupertinoColors.destructiveRed),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
-}
 
-String _formatBytes(int bytes) {
-  if (bytes <= 0) return '0 B';
-  const suffixes = ['B', 'KB', 'MB', 'GB'];
-  final i = (bytes == 0) ? 0 : (math.log(bytes) / math.log(1024)).floor();
-  final size = (bytes / math.pow(1024, i)).toStringAsFixed(1);
-  return '$size ${suffixes[i]}';
+  void _showActions(BuildContext context, WidgetRef ref) {
+    showAppSheet(
+      context,
+      builder: (sheetContext) => SheetSurface(
+        title: pack.name,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SoftButton(
+              label: 'Rename',
+              icon: CupertinoIcons.pencil,
+              onPressed: () async {
+                Navigator.of(sheetContext).pop();
+                final name = await promptForText(
+                  context,
+                  title: 'Rename pack',
+                  initialValue: pack.name,
+                  maxLength: 40,
+                );
+                if (name == null) return;
+                await ref
+                    .read(packRepositoryProvider)
+                    .renamePack(pack.id, name);
+              },
+            ),
+            SizedBox(height: 10.h),
+            SoftButton(
+              label: 'Set cover from gallery',
+              icon: CupertinoIcons.photo,
+              onPressed: () async {
+                Navigator.of(sheetContext).pop();
+                await _pickCover(context, ref);
+              },
+            ),
+            if (pack.coverStickerId != null) ...[
+              SizedBox(height: 10.h),
+              SoftButton(
+                label: 'Remove cover',
+                icon: CupertinoIcons.clear,
+                onPressed: () async {
+                  Navigator.of(sheetContext).pop();
+                  await ref
+                      .read(packRepositoryProvider)
+                      .setCoverSticker(pack.id, null);
+                },
+              ),
+            ],
+            SizedBox(height: 10.h),
+            SoftButton(
+              label: 'Duplicate pack',
+              icon: CupertinoIcons.square_on_square,
+              onPressed: () async {
+                Navigator.of(sheetContext).pop();
+                await ref.read(packRepositoryProvider).duplicatePack(pack.id);
+                if (context.mounted) showAppSnack(context, 'Pack duplicated');
+              },
+            ),
+            SizedBox(height: 10.h),
+            SoftButton(
+              label: 'Delete pack',
+              icon: CupertinoIcons.delete,
+              destructive: true,
+              onPressed: () async {
+                Navigator.of(sheetContext).pop();
+                final confirmed = await confirmDialog(
+                  context,
+                  title: 'Delete "${pack.name}"?',
+                  message:
+                      'This removes the pack and all ${pluralise(pack.stickerCount, 'sticker')} '
+                      'inside it. This cannot be undone.',
+                );
+                if (!confirmed) return;
+                await ref.read(packRepositoryProvider).deletePack(pack.id);
+                if (context.mounted) showAppSnack(context, 'Pack deleted');
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickCover(BuildContext context, WidgetRef ref) async {
+    final file = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+    );
+    if (file == null) return;
+    final stickerId = await createCoverStickerFromFile(ref, pack.id, file.path);
+    if (stickerId == null) {
+      if (context.mounted) {
+        showAppSnack(context, 'Could not use that image.', isError: true);
+      }
+      return;
+    }
+    await ref.read(packRepositoryProvider).setCoverSticker(pack.id, stickerId);
+  }
 }
 
 class _PackCover extends ConsumerWidget {
-  const _PackCover({required this.coverId});
+  const _PackCover({required this.coverId, required this.gradient});
 
   final String? coverId;
+  final List<Color> gradient;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (coverId == null) {
-      return _placeholder();
-    }
-    final stickerAsync = ref.watch(stickerByIdProvider(coverId!));
-    return stickerAsync.when(
-      data: (sticker) {
-        if (sticker == null) return _placeholder();
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(14.r),
-          child: Image.file(
-            File(sticker.filePath),
-            width: 72.w,
-            height: 72.h,
-            fit: BoxFit.cover,
-          ),
+    final id = coverId;
+    if (id == null) return _placeholder();
+
+    return ref.watch(stickerByIdProvider(id)).when(
+          data: (sticker) {
+            if (sticker == null) return _placeholder();
+            return Container(
+              width: 72.r,
+              height: 72.r,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: gradient),
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+              padding: EdgeInsets.all(4.r),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16.r),
+                child: Image.file(
+                  File(sticker.filePath),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _placeholder(),
+                ),
+              ),
+            );
+          },
+          loading: _placeholder,
+          error: (_, __) => _placeholder(),
         );
-      },
-      loading: () => _placeholder(),
-      error: (_, __) => _placeholder(),
-    );
   }
 
   Widget _placeholder() {
     return Container(
-      width: 72.w,
-      height: 72.h,
+      width: 72.r,
+      height: 72.r,
       decoration: BoxDecoration(
-        color: CupertinoColors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14.r),
+        gradient: LinearGradient(
+          colors: gradient.map((c) => c.withValues(alpha: 0.35)).toList(),
+        ),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
       child: Icon(
-        CupertinoIcons.photo,
-        color: const Color(0xFF8E8E93),
+        CupertinoIcons.square_stack_3d_down_right,
+        color: Colors.white.withValues(alpha: 0.85),
         size: 28.r,
       ),
     );
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.onCreate});
+/// Imports an arbitrary image as a sticker so it can act as a pack cover.
+Future<String?> createCoverStickerFromFile(
+  WidgetRef ref,
+  String packId,
+  String filePath,
+) async {
+  try {
+    final bytes = await File(filePath).readAsBytes();
+    final decoded = img.decodeImage(bytes);
+    if (decoded == null) return null;
 
-  final VoidCallback onCreate;
+    final resized = decoded.width > 512 || decoded.height > 512
+        ? img.copyResize(
+            decoded,
+            width: decoded.width >= decoded.height ? 512 : null,
+            height: decoded.height > decoded.width ? 512 : null,
+          )
+        : decoded;
+    final pngBytes = Uint8List.fromList(img.encodePng(resized));
 
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(32.r),
-        child: GlassCard(
-          padding: EdgeInsets.all(32.r),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 80.w,
-                height: 80.h,
-                decoration: BoxDecoration(
-                  color: CupertinoColors.white.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(40.r),
-                ),
-                child: Icon(
-                  CupertinoIcons.collections_solid,
-                  size: 40.r,
-                  color: CupertinoColors.white,
-                ),
-              ),
-              SizedBox(height: 20.h),
-              Text(
-                'Create your first sticker pack',
-                style: TextStyle(
-                  color: CupertinoColors.white,
-                  fontSize: 17.sp,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              SizedBox(height: 20.h),
-              CupertinoButton(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 32.w,
-                  vertical: 14.h,
-                ),
-                borderRadius: BorderRadius.circular(14.r),
-                color: const Color(0xFF2C2C2E),
-                onPressed: onCreate,
-                child: const Text('Start a Pack'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    final stickerId = const Uuid().v4();
+    final savedPath = await ref.read(storageServiceProvider).saveStickerBytes(
+          packId: packId,
+          stickerId: stickerId,
+          extension: 'png',
+          bytes: pngBytes,
+        );
+    await ref.read(stickerRepositoryProvider).createSticker(
+          id: stickerId,
+          packId: packId,
+          name: 'Cover',
+          filePath: savedPath,
+          width: resized.width,
+          height: resized.height,
+          format: StickerFormat.png,
+          fileSize: pngBytes.length,
+        );
+    return stickerId;
+  } catch (_) {
+    return null;
   }
 }

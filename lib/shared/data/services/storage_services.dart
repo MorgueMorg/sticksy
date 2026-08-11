@@ -4,6 +4,7 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
@@ -42,8 +43,7 @@ class LocalStorageService {
     if (!await stickersDir.exists()) {
       await stickersDir.create(recursive: true);
     }
-    final filePath = p.join(stickersDir.path, '$stickerId.$extension');
-    return File(filePath);
+    return File(p.join(stickersDir.path, '$stickerId.$extension'));
   }
 
   Future<String> saveStickerBytes({
@@ -63,15 +63,35 @@ class LocalStorageService {
     required String stickerId,
   }) async {
     final extension = p.extension(sourcePath).replaceFirst('.', '');
-    final destination = await createStickerFile(packId, stickerId, extension);
+    final destination = await createStickerFile(
+      packId,
+      stickerId,
+      extension.isEmpty ? 'png' : extension,
+    );
     await File(sourcePath).copy(destination.path);
     return destination.path;
   }
 
   Future<void> deleteFile(String path) async {
-    final file = File(path);
-    if (await file.exists()) {
-      await file.delete();
+    try {
+      final file = File(path);
+      if (await file.exists()) await file.delete();
+    } catch (_) {
+      // A missing or locked file must never block a delete/rename flow.
+    }
+  }
+
+  /// Total bytes stored under the app's sticker directory.
+  Future<int> usedBytes() async {
+    try {
+      final root = await getRootDir();
+      var size = 0;
+      await for (final entity in root.list(recursive: true)) {
+        if (entity is File) size += await entity.length();
+      }
+      return size;
+    } catch (_) {
+      return 0;
     }
   }
 }
@@ -101,56 +121,71 @@ class CacheService {
   }
 
   Future<int> getCacheSize() async {
-    final dir = await getCacheDir();
-    int size = 0;
-    if (!await dir.exists()) return 0;
-    await for (final entity in dir.list(recursive: true)) {
-      if (entity is File) {
-        size += await entity.length();
+    try {
+      final dir = await getCacheDir();
+      if (!await dir.exists()) return 0;
+      var size = 0;
+      await for (final entity in dir.list(recursive: true)) {
+        if (entity is File) size += await entity.length();
       }
+      return size;
+    } catch (_) {
+      return 0;
     }
-    return size;
   }
 
   Future<void> clearCache() async {
-    final dir = await getCacheDir();
-    if (await dir.exists()) {
-      await dir.delete(recursive: true);
+    try {
+      final dir = await getCacheDir();
+      if (await dir.exists()) await dir.delete(recursive: true);
+    } catch (_) {
+      // Ignore — clearing cache is best-effort.
     }
   }
 }
 
+/// Result of an encode that may have had to fall back to another format.
+class EncodedImage {
+  const EncodedImage(this.bytes, this.format);
+
+  final Uint8List bytes;
+  final StickerFormat format;
+}
+
 class ImageExportService {
-  Future<Uint8List> encodeWebp(
+  /// WebP encoding is Android-only in `flutter_image_compress`, and it also
+  /// drops alpha on some devices. Rather than silently shipping a broken
+  /// sticker we fall back to PNG and tell the caller what we actually produced.
+  Future<EncodedImage> encodeWebpOrPng(
     Uint8List inputBytes, {
+    int quality = 90,
     int? width,
     int? height,
-    int quality = 80,
   }) async {
-    final decoded = img.decodeImage(inputBytes);
-    if (decoded == null) {
-      throw StateError('Unable to decode image for WebP export.');
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return EncodedImage(inputBytes, StickerFormat.png);
     }
-    final targetWidth = width ?? decoded.width;
-    final targetHeight = height ?? decoded.height;
-    final result = await FlutterImageCompress.compressWithList(
-      inputBytes,
-      minWidth: targetWidth,
-      minHeight: targetHeight,
-      quality: quality,
-      format: CompressFormat.webp,
-    );
-    if (result.isEmpty) {
-      throw StateError('Unable to encode image for WebP export.');
+    try {
+      final result = await FlutterImageCompress.compressWithList(
+        inputBytes,
+        minWidth: width ?? 512,
+        minHeight: height ?? 512,
+        quality: quality,
+        format: CompressFormat.webp,
+        keepExif: false,
+      );
+      if (result.isEmpty) return EncodedImage(inputBytes, StickerFormat.png);
+      return EncodedImage(Uint8List.fromList(result), StickerFormat.webp);
+    } catch (_) {
+      return EncodedImage(inputBytes, StickerFormat.png);
     }
-    return Uint8List.fromList(result);
   }
 
   Future<Uint8List> encodePng(
     Uint8List inputBytes, {
     int? width,
     int? height,
-  }) async {
+  }) {
     return Isolate.run(() {
       final decoded = img.decodeImage(inputBytes);
       if (decoded == null) {
@@ -159,24 +194,20 @@ class ImageExportService {
       final resized = (width != null && height != null)
           ? img.copyResize(decoded, width: width, height: height)
           : decoded;
-      final encoded = img.encodePng(resized);
-      return Uint8List.fromList(encoded);
+      return Uint8List.fromList(img.encodePng(resized));
     });
   }
 
-  Future<Uint8List> cropToAspectRatio(
-    Uint8List inputBytes,
-    double ratio,
-  ) async {
+  Future<Uint8List> cropToAspectRatio(Uint8List inputBytes, double ratio) {
     return Isolate.run(() {
       final decoded = img.decodeImage(inputBytes);
       if (decoded == null) {
         throw StateError('Unable to decode image for cropping.');
       }
-      int newWidth = decoded.width;
-      int newHeight = decoded.height;
-      int offsetX = 0;
-      int offsetY = 0;
+      var newWidth = decoded.width;
+      var newHeight = decoded.height;
+      var offsetX = 0;
+      var offsetY = 0;
       final currentRatio = decoded.width / decoded.height;
       if (currentRatio > ratio) {
         newWidth = (decoded.height * ratio).round();
@@ -199,6 +230,22 @@ class ImageExportService {
 
 enum PackExportType { zip, whatsapp, telegram }
 
+extension PackExportTypeX on PackExportType {
+  String get label => switch (this) {
+        PackExportType.zip => 'ZIP archive',
+        PackExportType.whatsapp => 'WhatsApp pack',
+        PackExportType.telegram => 'Telegram pack',
+      };
+
+  String get blurb => switch (this) {
+        PackExportType.zip => 'Every sticker plus a metadata file.',
+        PackExportType.whatsapp =>
+          '512px WebP stickers with contents.json and a tray icon.',
+        PackExportType.telegram =>
+          'PNG stickers ready to hand to @stickers.',
+      };
+}
+
 class PackExportService {
   PackExportService({
     required this.cacheService,
@@ -213,6 +260,10 @@ class PackExportService {
     required List<StickerItem> stickers,
     required PackExportType type,
   }) async {
+    if (stickers.isEmpty) {
+      throw StateError('This pack has no stickers yet.');
+    }
+
     final archive = Archive();
     final exportedAt = DateTime.now().toIso8601String();
 
@@ -225,10 +276,14 @@ class PackExportService {
     }
 
     final zipData = ZipEncoder().encode(archive);
-
-    final fileName =
-        '${pack.name.replaceAll(' ', '_').toLowerCase()}_${type.name}.zip';
-    final file = await cacheService.createExportFile(fileName);
+    final safeName = pack.name
+        .replaceAll(RegExp(r'[^A-Za-z0-9_\- ]'), '')
+        .trim()
+        .replaceAll(RegExp(r'\s+'), '_')
+        .toLowerCase();
+    final file = await cacheService.createExportFile(
+      '${safeName.isEmpty ? 'pack' : safeName}_${type.name}.zip',
+    );
     await file.writeAsBytes(zipData, flush: true);
     return file;
   }
@@ -248,11 +303,7 @@ class PackExportService {
       'exportedAt': exportedAt,
       'stickers': stickers.map(_stickerMetadata).toList(),
     };
-    final metadataBytes = utf8.encode(jsonEncode(metadata));
-    archive.addFile(
-      ArchiveFile('metadata.json', metadataBytes.length, metadataBytes),
-    );
-
+    _addJson(archive, 'metadata.json', metadata);
     await _addStickerFiles(archive, stickers);
   }
 
@@ -262,31 +313,49 @@ class PackExportService {
     List<StickerItem> stickers,
     String exportedAt,
   ) async {
-    final stickerEntries = <Map<String, Object?>>[];
+    final entries = <Map<String, Object?>>[];
+
     for (final sticker in stickers) {
-      final bytes = await File(sticker.filePath).readAsBytes();
-      final webpBytes = await imageExportService.encodeWebp(
+      final bytes = await _readSticker(sticker);
+      if (bytes == null) continue;
+
+      final encoded = await imageExportService.encodeWebpOrPng(
         bytes,
         width: 512,
         height: 512,
-        quality: 80,
+        quality: 85,
       );
-      final fileName = 'stickers/${sticker.id}.webp';
-      archive.addFile(ArchiveFile(fileName, webpBytes.length, webpBytes));
-      stickerEntries.add({
-        'image_file': fileName.split('/').last,
+      final fileName = '${sticker.id}.${encoded.format.extension}';
+      archive.addFile(
+        ArchiveFile(
+          'stickers/$fileName',
+          encoded.bytes.length,
+          encoded.bytes,
+        ),
+      );
+      entries.add({
+        'image_file': fileName,
         'emojis': ['✨'],
       });
     }
 
-    final trayImage = stickers.isNotEmpty
-        ? await _buildTrayImage(stickers.first.filePath)
-        : Uint8List(0);
-    if (trayImage.isNotEmpty) {
-      archive.addFile(ArchiveFile('tray.png', trayImage.length, trayImage));
+    if (entries.isEmpty) {
+      throw StateError('None of the sticker files could be read.');
     }
 
-    final contents = {
+    final firstReadable = await _firstReadable(stickers);
+    if (firstReadable != null) {
+      final tray = await imageExportService.encodePng(
+        firstReadable,
+        width: 96,
+        height: 96,
+      );
+      archive.addFile(ArchiveFile('tray.png', tray.length, tray));
+    }
+
+    _addJson(archive, 'contents.json', {
+      'android_play_store_link': '',
+      'ios_app_store_link': '',
       'sticker_packs': [
         {
           'identifier': pack.id,
@@ -295,20 +364,27 @@ class PackExportService {
           'tray_image_file': 'tray.png',
           'image_data_version': '1',
           'avoid_cache': false,
-          // TODO Добавить доки
-          'publisher_email': 'support@sticksy.app',
-          'publisher_website': 'https://sticksy.app',
-          'privacy_policy_website': 'https://sticksy.app/privacy',
-          'license_agreement_website': 'https://sticksy.app/license',
-          'stickers': stickerEntries,
+          'publisher_email': '',
+          'publisher_website': '',
+          'privacy_policy_website': '',
+          'license_agreement_website': '',
+          'stickers': entries,
           'exported_at': exportedAt,
         },
       ],
-    };
+    });
 
-    final contentsBytes = utf8.encode(jsonEncode(contents));
-    archive.addFile(
-      ArchiveFile('contents.json', contentsBytes.length, contentsBytes),
+    _addText(
+      archive,
+      'README.txt',
+      'Sticksy — WhatsApp export\n\n'
+          'stickers/  512x512 sticker files\n'
+          'tray.png   96x96 tray icon\n'
+          'contents.json  pack manifest\n\n'
+          'WhatsApp only accepts packs through a companion app that implements '
+          'its sticker content provider, so this archive is the raw payload — '
+          'unzip it and add the stickers manually, or feed it to your own '
+          'WhatsApp sticker app.\n',
     );
   }
 
@@ -319,17 +395,20 @@ class PackExportService {
     String exportedAt,
   ) async {
     await _addStickerFiles(archive, stickers);
-    final metadata = {
+    _addJson(archive, 'telegram_pack.json', {
       'title': pack.name,
       'id': pack.id,
       'exportedAt': exportedAt,
       'stickers': stickers.map(_stickerMetadata).toList(),
-      'notes':
-          'Use @stickers bot to import these WebP/PNG stickers on Telegram.',
-    };
-    final metadataBytes = utf8.encode(jsonEncode(metadata));
-    archive.addFile(
-      ArchiveFile('telegram_pack.json', metadataBytes.length, metadataBytes),
+    });
+    _addText(
+      archive,
+      'README.txt',
+      'Sticksy — Telegram export\n\n'
+          'Open @stickers in Telegram, send /newpack, then upload the files '
+          'from the stickers/ folder one at a time and assign an emoji to '
+          'each. Telegram wants 512px PNG or WebP with transparency, which is '
+          'what Sticksy exports.\n',
     );
   }
 
@@ -338,25 +417,52 @@ class PackExportService {
     List<StickerItem> stickers,
   ) async {
     for (final sticker in stickers) {
-      final bytes = await File(sticker.filePath).readAsBytes();
-      final fileName = 'stickers/${sticker.id}.${sticker.format.extension}';
-      archive.addFile(ArchiveFile(fileName, bytes.length, bytes));
+      final bytes = await _readSticker(sticker);
+      if (bytes == null) continue;
+      archive.addFile(
+        ArchiveFile(
+          'stickers/${sticker.id}.${sticker.format.extension}',
+          bytes.length,
+          bytes,
+        ),
+      );
     }
   }
 
-  Map<String, Object?> _stickerMetadata(StickerItem sticker) {
-    return {
-      'id': sticker.id,
-      'name': sticker.name,
-      'format': sticker.format.extension,
-      'width': sticker.width,
-      'height': sticker.height,
-      'fileSize': sticker.fileSize,
-    };
+  Future<Uint8List?> _readSticker(StickerItem sticker) async {
+    try {
+      final file = File(sticker.filePath);
+      if (!await file.exists()) return null;
+      return await file.readAsBytes();
+    } catch (_) {
+      return null;
+    }
   }
 
-  Future<Uint8List> _buildTrayImage(String stickerPath) async {
-    final bytes = await File(stickerPath).readAsBytes();
-    return imageExportService.encodePng(bytes, width: 96, height: 96);
+  Future<Uint8List?> _firstReadable(List<StickerItem> stickers) async {
+    for (final sticker in stickers) {
+      final bytes = await _readSticker(sticker);
+      if (bytes != null) return bytes;
+    }
+    return null;
   }
+
+  void _addJson(Archive archive, String name, Object value) {
+    final bytes = utf8.encode(jsonEncode(value));
+    archive.addFile(ArchiveFile(name, bytes.length, bytes));
+  }
+
+  void _addText(Archive archive, String name, String value) {
+    final bytes = utf8.encode(value);
+    archive.addFile(ArchiveFile(name, bytes.length, bytes));
+  }
+
+  Map<String, Object?> _stickerMetadata(StickerItem sticker) => {
+        'id': sticker.id,
+        'name': sticker.name,
+        'format': sticker.format.extension,
+        'width': sticker.width,
+        'height': sticker.height,
+        'fileSize': sticker.fileSize,
+      };
 }

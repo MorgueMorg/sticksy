@@ -1,22 +1,72 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../features/ai/data/openrouter_client.dart';
-import '../../features/ai/data/remove_bg_client.dart';
 import '../../features/ai/data/ai_repository.dart';
 import '../../features/packs/data/pack_repository.dart';
 import '../../features/packs/domain/models.dart';
 import '../../shared/data/local/app_database.dart';
 import '../../shared/data/services/storage_services.dart';
-import '../config/env.dart';
+import '../config/ai_settings.dart';
 
-final envLoadResultProvider = Provider<EnvLoadResult>(
-  (ref) => throw UnimplementedError(),
+// ---------------------------------------------------------------------------
+// AI configuration
+// ---------------------------------------------------------------------------
+
+/// Seeded in `main()` with whatever was persisted last run, so the first frame
+/// already knows whether AI is available. Overridden in `ProviderScope`.
+final initialAiSettingsProvider = Provider<AiSettings>(
+  (ref) => const AiSettings(),
 );
 
-final envConfigProvider = Provider<EnvConfig?>(
-  (ref) => ref.watch(envLoadResultProvider).config,
+final aiSettingsStoreProvider = Provider<AiSettingsStore>(
+  (ref) => AiSettingsStore(),
 );
+
+final aiSettingsProvider =
+    StateNotifierProvider<AiSettingsController, AiSettings>((ref) {
+  return AiSettingsController(
+    ref.watch(initialAiSettingsProvider),
+    ref.watch(aiSettingsStoreProvider),
+  );
+});
+
+class AiSettingsController extends StateNotifier<AiSettings> {
+  AiSettingsController(AiSettings initial, this._store) : super(initial);
+
+  final AiSettingsStore _store;
+
+  Future<void> update(AiSettings next) async {
+    state = next;
+    try {
+      await _store.save(next);
+    } catch (_) {
+      // A failed write shouldn't lose the in-memory change.
+    }
+  }
+
+  Future<void> clear() async {
+    state = const AiSettings();
+    try {
+      await _store.clear();
+    } catch (_) {
+      // Ignore.
+    }
+  }
+}
+
+/// Rebuilt whenever settings change. Returns a no-credential stand-in rather
+/// than null so screens never have to null-check the repository.
+final aiRepositoryProvider = Provider<AiRepository>((ref) {
+  final settings = ref.watch(aiSettingsProvider);
+  if (!settings.isConfigured) return const UnconfiguredAiRepository();
+  final repository = AiRepositoryImpl(settings: settings);
+  ref.onDispose(repository.dispose);
+  return repository;
+});
+
+// ---------------------------------------------------------------------------
+// Storage
+// ---------------------------------------------------------------------------
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
   final database = AppDatabase();
@@ -28,9 +78,7 @@ final storageServiceProvider = Provider<LocalStorageService>(
   (ref) => LocalStorageService(),
 );
 
-final cacheServiceProvider = Provider<CacheService>(
-  (ref) => CacheService(),
-);
+final cacheServiceProvider = Provider<CacheService>((ref) => CacheService());
 
 final imageExportServiceProvider = Provider<ImageExportService>(
   (ref) => ImageExportService(),
@@ -38,31 +86,53 @@ final imageExportServiceProvider = Provider<ImageExportService>(
 
 final packExportServiceProvider = Provider<PackExportService>(
   (ref) => PackExportService(
-    cacheService: ref.read(cacheServiceProvider),
-    imageExportService: ref.read(imageExportServiceProvider),
+    cacheService: ref.watch(cacheServiceProvider),
+    imageExportService: ref.watch(imageExportServiceProvider),
   ),
 );
 
 final packRepositoryProvider = Provider<PackRepository>((ref) {
   return PackRepositoryImpl(
-    database: ref.read(appDatabaseProvider),
-    storage: ref.read(storageServiceProvider),
+    database: ref.watch(appDatabaseProvider),
+    storage: ref.watch(storageServiceProvider),
   );
 });
 
 final stickerRepositoryProvider = Provider<StickerRepository>((ref) {
   return StickerRepositoryImpl(
-    database: ref.read(appDatabaseProvider),
-    storage: ref.read(storageServiceProvider),
+    database: ref.watch(appDatabaseProvider),
+    storage: ref.watch(storageServiceProvider),
   );
 });
+
+// ---------------------------------------------------------------------------
+// Queries
+// ---------------------------------------------------------------------------
 
 final packSummariesProvider = StreamProvider<List<PackSummary>>((ref) {
   return ref.watch(packRepositoryProvider).watchPackSummaries();
 });
 
-final packSummaryProvider =
-    StreamProvider.family<PackSummary?, String>((ref, id) {
+/// Free-text filter applied to the pack list.
+final packSearchQueryProvider = StateProvider<String>((ref) => '');
+
+final filteredPackSummariesProvider = Provider<AsyncValue<List<PackSummary>>>((
+  ref,
+) {
+  final packs = ref.watch(packSummariesProvider);
+  final query = ref.watch(packSearchQueryProvider).trim().toLowerCase();
+  if (query.isEmpty) return packs;
+  return packs.whenData(
+    (list) => list
+        .where((pack) => pack.name.toLowerCase().contains(query))
+        .toList(),
+  );
+});
+
+final packSummaryProvider = StreamProvider.family<PackSummary?, String>((
+  ref,
+  id,
+) {
   return ref
       .watch(packRepositoryProvider)
       .watchPackSummaries()
@@ -74,31 +144,9 @@ final stickersForPackProvider =
   return ref.watch(stickerRepositoryProvider).watchStickers(packId);
 });
 
-final stickerByIdProvider =
-    FutureProvider.family<StickerItem?, String>((ref, id) {
+final stickerByIdProvider = FutureProvider.family<StickerItem?, String>((
+  ref,
+  id,
+) {
   return ref.watch(stickerRepositoryProvider).getSticker(id);
-});
-
-final openRouterClientProvider = Provider<OpenRouterClient?>((ref) {
-  final config = ref.watch(envConfigProvider);
-  if (config == null) return null;
-  return OpenRouterClient(
-    baseUrl: config.openRouterBaseUrl,
-    apiKey: config.openRouterApiKey,
-    model: config.openRouterModel,
-  );
-});
-
-final removeBgClientProvider = Provider<RemoveBgClient?>((ref) {
-  final config = ref.watch(envConfigProvider);
-  final key = config?.removeBgApiKey;
-  if (key == null || key.isEmpty) return null;
-  return RemoveBgClient(apiKey: key);
-});
-
-final aiRepositoryProvider = Provider<AiRepository>((ref) {
-  return AiRepositoryImpl(
-    chatClient: ref.watch(openRouterClientProvider),
-    removeBgClient: ref.watch(removeBgClientProvider),
-  );
 });
